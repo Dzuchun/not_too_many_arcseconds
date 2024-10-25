@@ -1,8 +1,8 @@
 use rand::{thread_rng, Rng};
 
-use crate::u206265;
+use crate::{u206265, BYTES};
 
-const ITERATIONS: usize = 10_000;
+use super::ITERATIONS;
 
 macro_rules! test_from_into {
     ($type:ty) => {
@@ -19,9 +19,9 @@ macro_rules! test_from_into {
                     let the_u206265 = u206265::try_from(input);
 
                     // assert
-                    #[allow(unused_comparisons)]
+                    #[allow(unused_comparisons, reason = "This macro tests both signed and unsigned types")]
                     {assert_eq!(the_u206265.is_ok(), input >= 0);}
-                    #[allow(irrefutable_let_patterns)]
+                    #[allow(irrefutable_let_patterns, reason = "This macro tests both signed and unsigned types")]
                     let Ok(the_u206265) = the_u206265 else {
                         continue;
                     };
@@ -55,3 +55,25 @@ test_from_into!(i32);
 test_from_into!(i64);
 test_from_into!(i128);
 test_from_into!(isize);
+
+macro_rules! test_from_repr {
+    ($from:expr, [$($expected:literal), +]) => {
+        ::paste::paste!{
+            #[test]
+            #[allow(non_snake_case, reason = "These names are generated, and thus allowed to be weird")]
+            fn [<repr_as_ $($expected)_+>]() {
+                // arrange
+                let from = $from;
+
+                // act
+                let result = u206265::from(from);
+
+                // assert
+                assert_eq!(result.significant_bytes_slice(), [$($expected),+]);
+            }
+        }
+    };
+}
+
+test_from_repr!(1u8, [1]);
+test_from_repr!(0xAA_BBu32, [0xAA, 0xBB]);
