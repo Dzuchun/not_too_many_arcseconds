@@ -137,3 +137,6 @@ impl_try_from_signed!(u32, i32);
 impl_try_from_signed!(u64, i64);
 impl_try_from_signed!(u128, i128);
 impl_try_from_signed!(usize, isize);
+
+#[cfg(test)]
+mod tests;
