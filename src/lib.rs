@@ -17,6 +17,28 @@ pub const MAX: u206265 = u206265({
     all_max
 });
 
+impl u206265 {
+    pub const fn significant_bytes(&self) -> usize {
+        let first_nonzero = {
+            let mut i = 0;
+            loop {
+                if i == BYTES {
+                    break BYTES - 1;
+                }
+                if self.0[i] > 0 {
+                    break i;
+                }
+                i += 1;
+            }
+        };
+        BYTES - first_nonzero
+    }
+
+    pub fn significant_bytes_slice(&self) -> &[u8] {
+        &self.0[(BYTES - self.significant_bytes())..]
+    }
+}
+
 mod pure_rust_impl;
 use pure_rust_impl::create_bytes;
 
