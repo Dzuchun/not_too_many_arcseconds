@@ -40,7 +40,10 @@ impl u206265 {
 }
 
 mod pure_rust_impl;
-use pure_rust_impl::create_bytes;
+
+use core::ops::{Add, AddAssign};
+
+use pure_rust_impl::{add_new, create_bytes};
 
 macro_rules! impl_from_unsigned {
     ($type:ty) => {
@@ -99,6 +102,7 @@ impl_from_signed!(i128, u128);
 impl_from_signed!(isize, usize);
 
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct u206265ToUnsigned {
     pub min_bytes: usize,
 }
@@ -142,6 +146,7 @@ impl_try_from_unsigned!(u128);
 impl_try_from_unsigned!(usize);
 
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum u206265ToSigned<Unsigned, Signed: TryFrom<Unsigned>> {
     Unsigned(u206265ToUnsigned),
     Sign(Signed::Error),
@@ -166,6 +171,53 @@ impl_try_from_signed!(u32, i32);
 impl_try_from_signed!(u64, i64);
 impl_try_from_signed!(u128, i128);
 impl_try_from_signed!(usize, isize);
+
+impl<'lhs, 'rhs> Add<&'rhs u206265> for &'lhs u206265 {
+    type Output = u206265;
+
+    #[inline]
+    fn add(self, rhs: &'rhs u206265) -> Self::Output {
+        let (result, overflow) = add_new(self, rhs);
+        debug_assert!(!overflow, "u206265 add overflow!");
+        result
+    }
+}
+
+impl<'rhs> Add<&'rhs u206265> for u206265 {
+    type Output = u206265;
+
+    #[inline]
+    fn add(self, rhs: &Self) -> Self::Output {
+        let (sum, overflow) = add_new(&self, rhs);
+        debug_assert!(!overflow, "u206265 add overflow!");
+        sum
+    }
+}
+
+impl Add for u206265 {
+    type Output = u206265;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        self.add(&rhs)
+    }
+}
+
+impl<'rhs> AddAssign<&'rhs u206265> for u206265 {
+    #[inline]
+    fn add_assign(&mut self, rhs: &'rhs u206265) {
+        let (sum, overflow) = add_new(self, rhs);
+        debug_assert!(!overflow, "u206265 add overflow!");
+        *self = sum;
+    }
+}
+
+impl AddAssign for u206265 {
+    #[inline]
+    fn add_assign(&mut self, rhs: u206265) {
+        *self += &rhs;
+    }
+}
 
 #[cfg(test)]
 mod tests;
