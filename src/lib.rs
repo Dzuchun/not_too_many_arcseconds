@@ -23,14 +23,16 @@ use pure_rust_impl::create_bytes;
 macro_rules! impl_from_unsigned {
     ($type:ty) => {
         impl From<$type> for u206265 {
+            #[inline]
             fn from(value: $type) -> Self {
-                create_bytes(value.to_le_bytes())
+                create_bytes(value.to_be_bytes())
             }
         }
 
         impl<'from> From<&'from $type> for u206265 {
+            #[inline]
             fn from(value: &$type) -> Self {
-                create_bytes(value.to_le_bytes())
+                Self::from(*value)
             }
         }
     };
@@ -48,7 +50,18 @@ macro_rules! impl_from_signed {
         impl TryFrom<$itype> for u206265 {
             type Error = <$utype as TryFrom<$itype>>::Error;
 
+            #[inline]
             fn try_from(value: $itype) -> Result<Self, Self::Error> {
+                let unsigned: $utype = value.try_into()?;
+                Ok(u206265::from(unsigned))
+            }
+        }
+
+        impl<'from> TryFrom<&'from $itype> for u206265 {
+            type Error = <$utype as TryFrom<$itype>>::Error;
+
+            #[inline]
+            fn try_from(&value: &$itype) -> Result<Self, Self::Error> {
                 let unsigned: $utype = value.try_into()?;
                 Ok(u206265::from(unsigned))
             }
@@ -73,36 +86,27 @@ macro_rules! impl_try_from_unsigned {
         impl TryFrom<u206265> for $type {
             type Error = u206265ToUnsigned;
 
-            fn try_from(u206265(value): u206265) -> Result<Self, Self::Error> {
+            fn try_from(value: u206265) -> Result<Self, Self::Error> {
                 let bytes = *value
+                    .0
                     .last_chunk()
                     .expect("Primitive integers should not be larger than 206265 bytes");
-                let first_significant = value.iter().copied().position(|b| b > 0).unwrap_or(BYTES);
-                let significant_length = BYTES - first_significant;
+                let significant_length = value.significant_bytes();
                 if significant_length > bytes.len() {
                     return Err(u206265ToUnsigned {
                         min_bytes: significant_length,
                     });
                 }
-                Ok(Self::from_le_bytes(bytes))
+                Ok(Self::from_be_bytes(bytes))
             }
         }
 
         impl<'from> TryFrom<&'from u206265> for $type {
             type Error = u206265ToUnsigned;
 
-            fn try_from(u206265(value): &u206265) -> Result<Self, Self::Error> {
-                let bytes = *value
-                    .last_chunk()
-                    .expect("Primitive integers should not be larger than 206265 bytes");
-                let first_significant = value.iter().copied().position(|b| b > 0).unwrap_or(BYTES);
-                let significant_length = BYTES - first_significant;
-                if significant_length > bytes.len() {
-                    return Err(u206265ToUnsigned {
-                        min_bytes: significant_length,
-                    });
-                }
-                Ok(Self::from_le_bytes(bytes))
+            #[inline]
+            fn try_from(value: &u206265) -> Result<Self, Self::Error> {
+                Self::try_from(*value)
             }
         }
     };
