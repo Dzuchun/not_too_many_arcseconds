@@ -1,7 +1,9 @@
 use crate::{u206265, BYTES};
 
-pub fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
-    let diff: usize = BYTES.checked_sub(N).expect("Input array is too big!");
+pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
+    let Some(diff) = BYTES.checked_sub(N) else {
+        panic!("Input array is too big!");
+    };
     if diff == 0 {
         assert!(
             bytes[0] <= 1,
@@ -9,6 +11,6 @@ pub fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
         );
     }
     let mut result = [0u8; BYTES];
-    result[diff..].copy_from_slice(bytes.as_slice());
+    const_for!(i in diff..BYTES => result[i] = bytes[i-diff]);
     u206265(result)
 }
