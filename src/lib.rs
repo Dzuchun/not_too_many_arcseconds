@@ -1,3 +1,5 @@
+#![no_std]
+
 const BYTES: usize = 25_783 + 1; // 206_265 / 8 + 1
 
 // little-endian
