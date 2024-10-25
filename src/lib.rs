@@ -1,5 +1,6 @@
 const BYTES: usize = 25_783 + 1; // 206_265 / 8 + 1
 
+// little-endian
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
@@ -10,3 +11,5 @@ pub const MAX: u206265 = u206265({
     all_max[0] = 0b1;
     all_max
 });
+
+mod pure_rust_impl;
