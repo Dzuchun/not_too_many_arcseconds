@@ -68,3 +68,32 @@ pub const fn const_add(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
     }
     (lhs, overflow)
 }
+
+pub const fn const_sub(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
+    let mut borrow = 0u8;
+    const_for!(i in 0..BYTES => {
+        let (sub, underflow) = lhs.0[i].overflowing_sub(borrow);
+
+        borrow = 0;
+        if underflow {
+            borrow += 1;
+        }
+
+        let (sub, underflow) = sub.overflowing_sub(rhs.0[i]);
+        if underflow {
+            borrow += 1;
+        }
+
+        lhs.0[i] = sub;
+    });
+
+    let underflow;
+    match (lhs.0[BYTES - 1] & 0xFE, lhs.0[BYTES - 1] & 0x01) {
+        (0, 0 | 1) => underflow = false,
+        (_, last) => {
+            underflow = true;
+            lhs.0[BYTES - 1] = last;
+        }
+    }
+    (lhs, underflow)
+}
