@@ -252,3 +252,27 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     }
     (u206265(result), overflow)
 }
+
+pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u206265)> {
+    if const_cmp(rhs, &u206265::ZERO).is_eq() {
+        return None;
+    }
+    let mut remainder = *lhs;
+    let mut result = u206265::ZERO;
+    #[allow(clippy::cast_possible_truncation)]
+    let significant_bits = ((lhs
+        .significant_bytes()
+        .saturating_sub(rhs.significant_bytes())
+        + 2)
+        * 8) as u32;
+    const_for!(bit in (0..significant_bits).rev() => {
+        let (probe, _) = const_shl(rhs, bit);
+        if const_cmp(&remainder, &probe).is_lt() {
+            continue;
+        }
+        remainder = const_sub(&remainder, &probe).0;
+        let res_add = const_shl(&u206265::ONE, bit).0;
+        result = const_add(&result, &res_add).0;
+    });
+    Some((result, remainder))
+}
