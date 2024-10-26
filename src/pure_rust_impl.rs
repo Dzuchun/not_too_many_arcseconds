@@ -4,6 +4,21 @@ use const_for::const_for;
 
 use crate::{u206265, BYTES};
 
+const BITS_U32: u32 = {
+    use crate::BITS;
+    let Some(max_u32) = 1usize.checked_shl(31) else {
+        panic!("usize is less than 31 bits");
+    };
+    assert!(!(BITS > max_u32), "BITS should not be greater than 31 bits");
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "This cast was validated above - BITS is 31 bits at most"
+    )]
+    {
+        BITS as u32
+    }
+};
+
 pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
     assert!(N <= BYTES, "Input array is too big!");
     if N == BYTES {
@@ -39,6 +54,36 @@ pub const fn const_cmp(lhs: &u206265, rhs: &u206265) -> Ordering {
         assert!(lhs == rhs);
     });
     Ordering::Equal
+}
+
+pub const fn const_shl(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
+    let mut result = *lhs;
+
+    // first, do the same thing std does, for consistency
+    let overflow;
+    if rhs >= BITS_U32 {
+        overflow = true;
+        rhs %= BITS_U32;
+    } else {
+        overflow = false;
+    }
+
+    // first, apply the whole-byte shift
+    let byte_shift = (rhs >> 3) as usize;
+    if byte_shift > 0 {
+        const_for!(i in (byte_shift..BYTES).rev() => result.0[i] = result.0[i-byte_shift]);
+        const_for!(i in 0..byte_shift => result.0[i] = 0);
+    }
+
+    // then, the subbyte shift
+    let subbyte_shift = rhs & 0b111;
+    let mut carry = 0u16;
+    const_for!(i in byte_shift..BYTES => {
+        carry += (result.0[i] as u16) << subbyte_shift;
+        result.0[i] = (carry & 0x00FF) as u8;
+        carry >>= 8;
+    });
+    (result, overflow)
 }
 
 pub const fn const_add(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {

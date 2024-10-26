@@ -5,4 +5,5 @@ mod from_into;
 mod add;
 mod cmp;
 mod mul;
+mod shl;
 mod sub;

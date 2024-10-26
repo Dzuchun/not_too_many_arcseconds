@@ -3,7 +3,8 @@
 #[cfg(test)]
 extern crate std;
 
-const BYTES: usize = 25_783 + 1; // 206_265 / 8 + 1
+const BITS: usize = 206_265;
+const BYTES: usize = BITS / 8 + 1; // 206_265 / 8 + 1
 
 // little-endian
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
@@ -40,7 +41,7 @@ mod pure_rust_impl;
 
 use core::ops::{Add, AddAssign};
 
-use pure_rust_impl::{const_add, const_cmp, const_mul, const_sub, create_bytes};
+use pure_rust_impl::{const_add, const_cmp, const_mul, const_shl, const_sub, create_bytes};
 
 macro_rules! impl_from_unsigned {
     ($type:ty) => {
