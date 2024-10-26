@@ -6,4 +6,5 @@ mod add;
 mod cmp;
 mod mul;
 mod shl;
+mod shr;
 mod sub;

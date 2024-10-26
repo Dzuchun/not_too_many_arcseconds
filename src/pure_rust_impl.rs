@@ -86,6 +86,37 @@ pub const fn const_shl(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
     (result, overflow)
 }
 
+pub const fn const_shr(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
+    let mut result = *lhs;
+
+    // first, do the same thing std does, for consistency
+    let overflow;
+    if rhs >= BITS_U32 {
+        overflow = true;
+        rhs %= BITS_U32;
+    } else {
+        overflow = false;
+    }
+
+    // first, apply the whole-byte shift
+    let mut byte_shift = (rhs >> 3) as usize;
+    if byte_shift > 0 {
+        const_for!(i in 0..(BYTES - byte_shift) => result.0[i] = result.0[i + byte_shift]);
+        const_for!(i in (BYTES - byte_shift)..BYTES => result.0[i] = 0);
+        byte_shift -= 1;
+    }
+
+    // then, the subbyte shift
+    let subbyte_shift = rhs & 0b111;
+    let mut carry = 0u16;
+    const_for!(i in (0..(BYTES - byte_shift)).rev() => {
+        carry += ((result.0[i] as u16) << 8) >> subbyte_shift;
+        result.0[i] = (carry >> 8) as u8;
+        carry <<= 8;
+    });
+    (result, overflow)
+}
+
 pub const fn const_add(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
     let significant_length = {
         let mut sl;
