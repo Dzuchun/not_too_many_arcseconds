@@ -40,7 +40,7 @@ mod pure_rust_impl;
 
 use core::ops::{Add, AddAssign};
 
-use pure_rust_impl::{const_add, const_sub, create_bytes};
+use pure_rust_impl::{const_add, const_mul, const_sub, create_bytes};
 
 macro_rules! impl_from_unsigned {
     ($type:ty) => {

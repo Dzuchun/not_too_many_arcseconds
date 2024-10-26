@@ -97,3 +97,56 @@ pub const fn const_sub(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
     }
     (lhs, underflow)
 }
+
+pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
+    let lhs_bytes = lhs.significant_bytes();
+    let rhs_bytes = rhs.significant_bytes();
+    let max_power = {
+        let mut mp = lhs_bytes + rhs_bytes + 2;
+        if mp > BYTES {
+            mp = BYTES;
+        }
+        mp
+    };
+
+    let mut result = [0u8; BYTES];
+    let mut carry = 0u32; // about 26k additions max, 256 max addition for each
+    const_for!(power in 0..max_power => {
+        const_for!(lhs_power in 0..power => {
+            if lhs_power >= lhs_bytes {
+                continue;
+            }
+            let rhs_power = power - lhs_power;
+            if rhs_power >= rhs_bytes {
+                continue;
+            }
+            let lhs = lhs.0[lhs_power];
+            let rhs = rhs.0[rhs_power];
+            let Some(power_mul) = (lhs as u16).checked_mul(rhs as u16) else {
+                panic!("Should not overflow on 2-integer multiplication of 1-byte integers");
+            };
+            carry += power_mul as u32;
+        });
+        result[power] = (carry & 0xFF) as u8;
+        carry >>= 8;
+    });
+
+    let overflow;
+    if max_power == BYTES {
+        match result[BYTES - 1] {
+            0 | 1 => overflow = false,
+            2 => {
+                overflow = true;
+                result[BYTES - 1] = 0;
+            }
+            3 => {
+                overflow = true;
+                result[BYTES - 1] = 1;
+            }
+            4.. => panic!("Most-significant bit cannot be 4 or more"),
+        }
+    } else {
+        overflow = false;
+    }
+    (u206265(result), overflow)
+}
