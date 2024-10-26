@@ -11,14 +11,20 @@ const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
 
-pub const MIN: u206265 = u206265([0; BYTES]);
-pub const MAX: u206265 = u206265({
-    let mut all_max = [0xff; BYTES];
-    all_max[BYTES - 1] = 0b1;
-    all_max
-});
-
 impl u206265 {
+    pub const MIN: u206265 = u206265([0; BYTES]);
+    pub const ZERO: u206265 = Self::MIN;
+    pub const ONE: u206265 = u206265({
+        let mut all_max = [0x00; BYTES];
+        all_max[0] = 0b1;
+        all_max
+    });
+    pub const MAX: u206265 = u206265({
+        let mut all_max = [0xff; BYTES];
+        all_max[BYTES - 1] = 0b1;
+        all_max
+    });
+
     pub const fn significant_bytes(&self) -> usize {
         let mut i = BYTES - 1;
         loop {
