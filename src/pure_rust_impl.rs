@@ -1,3 +1,5 @@
+use core::cmp::Ordering;
+
 use const_for::const_for;
 
 use crate::{u206265, BYTES};
@@ -13,6 +15,30 @@ pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
     let mut result = [0u8; BYTES];
     const_for!(i in 0..N => result[i] = bytes[i]);
     u206265(result)
+}
+
+pub const fn const_cmp(lhs: &u206265, rhs: &u206265) -> Ordering {
+    let lhs_bytes = lhs.significant_bytes();
+    let rhs_bytes = rhs.significant_bytes();
+    if lhs_bytes < rhs_bytes {
+        return Ordering::Less;
+    }
+    if lhs_bytes > rhs_bytes {
+        return Ordering::Greater;
+    }
+    assert!(lhs_bytes == rhs_bytes);
+    const_for!(b in (0..lhs_bytes).rev() => {
+        let lhs = lhs.0[b];
+        let rhs = rhs.0[b];
+        if lhs < rhs {
+            return Ordering::Less;
+        }
+        if lhs > rhs {
+            return Ordering::Greater;
+        }
+        assert!(lhs == rhs);
+    });
+    Ordering::Equal
 }
 
 pub const fn const_add(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
