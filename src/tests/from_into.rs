@@ -1,6 +1,6 @@
 use rand::{thread_rng, Rng};
 
-use crate::{u206265, BYTES};
+use crate::u206265;
 
 use super::ITERATIONS;
 
@@ -76,4 +76,4 @@ macro_rules! test_from_repr {
 }
 
 test_from_repr!(1u8, [1]);
-test_from_repr!(0xAA_BBu32, [0xAA, 0xBB]);
+test_from_repr!(0xAA_BBu32, [0xBB, 0xAA]);

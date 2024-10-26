@@ -3,33 +3,36 @@ use const_for::const_for;
 use crate::{u206265, BYTES};
 
 pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
-    let Some(diff) = BYTES.checked_sub(N) else {
-        panic!("Input array is too big!");
-    };
-    if diff == 0 {
+    assert!(N <= BYTES, "Input array is too big!");
+    if N == BYTES {
         assert!(
-            bytes[0] <= 1,
-            "Can't create u206265: upper-most byte contains more than a single bit!"
+            bytes[BYTES - 1] <= 1,
+            "Upper-most byte should contain at most 1!"
         );
     }
     let mut result = [0u8; BYTES];
-    const_for!(i in diff..BYTES => result[i] = bytes[i-diff]);
+    const_for!(i in 0..N => result[i] = bytes[i]);
     u206265(result)
 }
 
-pub const fn add_new(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
-    let mut carry = 0u8;
+pub const fn const_add(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
     let significant_length = {
+        let mut sl;
         let lhs = lhs.significant_bytes();
         let rhs = rhs.significant_bytes();
         if lhs > rhs {
-            lhs
+            sl = lhs;
         } else {
-            rhs
+            sl = rhs;
         }
+        if sl < BYTES {
+            sl += 1;
+        }
+        sl
     };
-    let low_index = BYTES.saturating_sub(significant_length + 2);
-    const_for!(i in (low_index..BYTES).rev() => {
+
+    let mut carry = 0u8;
+    const_for!(i in 0..significant_length => {
         let sum = carry;
         carry = 0;
 
@@ -48,15 +51,15 @@ pub const fn add_new(&(mut lhs): &u206265, rhs: &u206265) -> (u206265, bool) {
 
     let overflow;
     if significant_length == BYTES {
-        match lhs.0[0] {
+        match lhs.0[BYTES - 1] {
             0 | 1 => overflow = false,
             2 => {
                 overflow = true;
-                lhs.0[0] = 0;
+                lhs.0[BYTES - 1] = 0;
             }
             3 => {
                 overflow = true;
-                lhs.0[0] = 1;
+                lhs.0[BYTES - 1] = 1;
             }
             4.. => panic!("Most-significant bit cannot be 4 or more"),
         }

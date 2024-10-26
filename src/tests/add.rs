@@ -20,7 +20,7 @@ fn add() {
         let the_rhs = u206265::from(rhs);
 
         // act
-        let (the_sum, the_ov) = crate::add_new(&the_lhs, &the_rhs);
+        let (the_sum, the_ov) = crate::const_add(&the_lhs, &the_rhs);
 
         // assert
         let sum2 = u128::try_from(the_sum);

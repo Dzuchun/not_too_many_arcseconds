@@ -5,7 +5,7 @@ extern crate std;
 
 const BYTES: usize = 25_783 + 1; // 206_265 / 8 + 1
 
-// big-endian
+// little-endian
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
@@ -13,29 +13,26 @@ pub struct u206265([u8; BYTES]); // last byte should only use one bit
 pub const MIN: u206265 = u206265([0; BYTES]);
 pub const MAX: u206265 = u206265({
     let mut all_max = [0xff; BYTES];
-    all_max[0] = 0b1;
+    all_max[BYTES - 1] = 0b1;
     all_max
 });
 
 impl u206265 {
     pub const fn significant_bytes(&self) -> usize {
-        let first_nonzero = {
-            let mut i = 0;
-            loop {
-                if i == BYTES {
-                    break BYTES - 1;
-                }
-                if self.0[i] > 0 {
-                    break i;
-                }
-                i += 1;
+        let mut i = BYTES - 1;
+        loop {
+            if self.0[i] > 0 {
+                return i + 1;
             }
-        };
-        BYTES - first_nonzero
+            if i == 0 {
+                return 1;
+            }
+            i -= 1;
+        }
     }
 
     pub fn significant_bytes_slice(&self) -> &[u8] {
-        &self.0[(BYTES - self.significant_bytes())..]
+        &self.0[..self.significant_bytes()]
     }
 }
 
@@ -43,14 +40,14 @@ mod pure_rust_impl;
 
 use core::ops::{Add, AddAssign};
 
-use pure_rust_impl::{add_new, create_bytes};
+use pure_rust_impl::{const_add, create_bytes};
 
 macro_rules! impl_from_unsigned {
     ($type:ty) => {
         impl From<$type> for u206265 {
             #[inline]
             fn from(value: $type) -> Self {
-                create_bytes(value.to_be_bytes())
+                create_bytes(value.to_le_bytes())
             }
         }
 
@@ -115,7 +112,7 @@ macro_rules! impl_try_from_unsigned {
             fn try_from(value: u206265) -> Result<Self, Self::Error> {
                 let bytes = *value
                     .0
-                    .last_chunk()
+                    .first_chunk()
                     .expect("Primitive integers should not be larger than 206265 bytes");
                 let significant_length = value.significant_bytes();
                 if significant_length > bytes.len() {
@@ -123,7 +120,7 @@ macro_rules! impl_try_from_unsigned {
                         min_bytes: significant_length,
                     });
                 }
-                Ok(Self::from_be_bytes(bytes))
+                Ok(Self::from_le_bytes(bytes))
             }
         }
 
@@ -177,7 +174,7 @@ impl<'lhs, 'rhs> Add<&'rhs u206265> for &'lhs u206265 {
 
     #[inline]
     fn add(self, rhs: &'rhs u206265) -> Self::Output {
-        let (result, overflow) = add_new(self, rhs);
+        let (result, overflow) = const_add(self, rhs);
         debug_assert!(!overflow, "u206265 add overflow!");
         result
     }
@@ -188,7 +185,7 @@ impl<'rhs> Add<&'rhs u206265> for u206265 {
 
     #[inline]
     fn add(self, rhs: &Self) -> Self::Output {
-        let (sum, overflow) = add_new(&self, rhs);
+        let (sum, overflow) = const_add(&self, rhs);
         debug_assert!(!overflow, "u206265 add overflow!");
         sum
     }
@@ -206,7 +203,7 @@ impl Add for u206265 {
 impl<'rhs> AddAssign<&'rhs u206265> for u206265 {
     #[inline]
     fn add_assign(&mut self, rhs: &'rhs u206265) {
-        let (sum, overflow) = add_new(self, rhs);
+        let (sum, overflow) = const_add(self, rhs);
         debug_assert!(!overflow, "u206265 add overflow!");
         *self = sum;
     }
