@@ -296,3 +296,16 @@ pub const fn const_ilog10(val: &u206265) -> Option<u32> {
     const TEN: u206265 = create_bytes([10u8]);
     const_ilog(val, &TEN)
 }
+
+pub const fn const_ilog2(val: &u206265) -> Option<u32> {
+    // basically, I need to find position of the highest bit
+    let high_byte_pos = val.significant_bytes();
+    let high_byte = val.0[high_byte_pos - 1]; // 1 significant byte means highest byte is 0, an so on
+    let Some(high_byte_bit) = high_byte.checked_ilog2() else {
+        // if high byte is 0, the number itself is 0 - return none
+        //
+        // const context - can't use the `?` operator :(
+        return None;
+    };
+    Some((val.significant_bytes_u32() - 1) * 8 + high_byte_bit)
+}
