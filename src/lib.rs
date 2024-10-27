@@ -70,8 +70,8 @@ mod pure_rust_impl;
 use core::ops::{Add, AddAssign};
 
 use pure_rust_impl::{
-    const_add, const_cmp, const_div, const_ilog, const_mul, const_shl, const_shr, const_sub,
-    create_bytes,
+    const_add, const_cmp, const_div, const_ilog, const_ilog10, const_mul, const_shl,
+    const_shr, const_sub, create_bytes,
 };
 
 macro_rules! impl_from_unsigned {

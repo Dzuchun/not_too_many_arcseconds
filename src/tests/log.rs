@@ -49,3 +49,26 @@ macro_rules! test_ilog_special {
 
 test_ilog_special!(9u128, 3);
 test_ilog_special!(10u128, 3);
+test_ilog_special!(10u128, 10);
+test_ilog_special!(11u128, 10);
+test_ilog_special!(100u128, 10);
+test_ilog_special!(999_999_999_999u128, 10);
+
+#[test]
+fn ilog10() {
+    let mut rng = thread_rng();
+
+    for _ in 0..ITERATIONS {
+        // arrange
+        let val: u128 = rng.gen();
+        let log = val.checked_ilog10();
+
+        let the_val = u206265::from(val);
+
+        // act
+        let log2 = crate::const_ilog10(&the_val);
+
+        // assert
+        assert_eq!(log, log2, "For log10({val})");
+    }
+}

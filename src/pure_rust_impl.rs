@@ -291,3 +291,8 @@ pub const fn const_ilog(val: &u206265, base: &u206265) -> Option<u32> {
     }
     Some(res)
 }
+
+pub const fn const_ilog10(val: &u206265) -> Option<u32> {
+    const TEN: u206265 = create_bytes([10u8]);
+    const_ilog(val, &TEN)
+}
