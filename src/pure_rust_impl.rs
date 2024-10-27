@@ -277,3 +277,32 @@ pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u206265
     });
     Some((result, remainder))
 }
+
+pub const fn const_ilog(val: &u206265, base: &u206265) -> Option<u32> {
+    const TWO: u206265 = create_bytes([0x02]);
+    if const_cmp(base, &TWO).is_lt() || const_cmp(val, &u206265::ZERO).is_eq() {
+        return None;
+    }
+    if const_cmp(val, &u206265::ONE).is_eq() {
+        return Some(0);
+    }
+    let mut probe = u206265::ONE;
+    let mut res = 0u32;
+    loop {
+        let (new_probe, overflow) = const_mul(&probe, base);
+        if overflow {
+            break;
+        }
+        probe = new_probe;
+        match const_cmp(val, &probe) {
+            Ordering::Less => break,
+            Ordering::Equal => {
+                res += 1;
+                break;
+            }
+            Ordering::Greater => {}
+        }
+        res += 1;
+    }
+    Some(res)
+}
