@@ -12,13 +12,9 @@ const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
 
 impl u206265 {
-    pub const MIN: u206265 = u206265([0; BYTES]);
+    pub const MIN: u206265 = create_bytes([]);
     pub const ZERO: u206265 = Self::MIN;
-    pub const ONE: u206265 = u206265({
-        let mut all_max = [0x00; BYTES];
-        all_max[0] = 0b1;
-        all_max
-    });
+    pub const ONE: u206265 = create_bytes([0x01]);
     pub const MAX: u206265 = u206265({
         let mut all_max = [0xff; BYTES];
         all_max[BYTES - 1] = 0b1;
