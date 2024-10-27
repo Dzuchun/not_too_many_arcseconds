@@ -2,22 +2,7 @@ use core::cmp::Ordering;
 
 use const_for::const_for;
 
-use crate::{u206265, BYTES};
-
-const BITS_U32: u32 = {
-    use crate::BITS;
-    let Some(max_u32) = 1usize.checked_shl(31) else {
-        panic!("usize is less than 31 bits");
-    };
-    assert!(!(BITS > max_u32), "BITS should not be greater than 31 bits");
-    #[allow(
-        clippy::cast_possible_truncation,
-        reason = "This cast was validated above - BITS is 31 bits at most"
-    )]
-    {
-        BITS as u32
-    }
-};
+use crate::{u206265, BITS_U32, BYTES};
 
 pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
     assert!(N <= BYTES, "Input array is too big!");

@@ -4,6 +4,20 @@
 extern crate std;
 
 const BITS: usize = 206_265;
+const BITS_U32: u32 = {
+    use crate::BITS;
+    let Some(max_u32) = 1usize.checked_shl(31) else {
+        panic!("usize is less than 31 bits");
+    };
+    assert!(!(BITS > max_u32), "BITS should not be greater than 31 bits");
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "This cast was validated above - BITS is 31 bits at most"
+    )]
+    {
+        BITS as u32
+    }
+};
 const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206_265 / 8 + 1
 
 // little-endian
