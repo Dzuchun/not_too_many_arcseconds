@@ -214,12 +214,13 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     let mut result = [0u8; BYTES];
     let mut carry = 0u32; // about 26k additions max, 256 max addition for each
     const_for!(power in 0..max_power => {
-        const_for!(lhs_power in 0..power => {
-            if lhs_power >= lhs_bytes {
+        #[allow(clippy::range_plus_one, reason = "const_for! is not compatible with ..= syntax :(")]
+        {const_for!(lhs_power in 0..(power+1) => {
+            if lhs_power > lhs_bytes {
                 continue;
             }
             let rhs_power = power - lhs_power;
-            if rhs_power >= rhs_bytes {
+            if rhs_power > rhs_bytes {
                 continue;
             }
             let lhs = lhs.0[lhs_power];
@@ -228,7 +229,7 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
                 panic!("Should not overflow on 2-integer multiplication of 1-byte integers");
             };
             carry += power_mul as u32;
-        });
+        });}
         result[power] = (carry & 0xFF) as u8;
         carry >>= 8;
     });
