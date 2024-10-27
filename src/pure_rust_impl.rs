@@ -309,3 +309,45 @@ pub const fn const_ilog2(val: &u206265) -> Option<u32> {
     };
     Some((val.significant_bytes_u32() - 1) * 8 + high_byte_bit)
 }
+
+pub const fn const_bit_and(&(mut lhs): &u206265, rhs: &u206265) -> u206265 {
+    let lhs_bytes = lhs.significant_bytes();
+    let rhs_bytes = rhs.significant_bytes();
+    let bytes = if lhs_bytes >= rhs_bytes {
+        lhs_bytes
+    } else {
+        rhs_bytes
+    };
+    const_for!(i in 0..bytes => {
+        lhs.0[i] &= rhs.0[i];
+    });
+    lhs
+}
+
+pub const fn const_bit_or(&(mut lhs): &u206265, rhs: &u206265) -> u206265 {
+    let lhs_bytes = lhs.significant_bytes();
+    let rhs_bytes = rhs.significant_bytes();
+    let bytes = if lhs_bytes >= rhs_bytes {
+        lhs_bytes
+    } else {
+        rhs_bytes
+    };
+    const_for!(i in 0..bytes => {
+        lhs.0[i] |= rhs.0[i];
+    });
+    lhs
+}
+
+pub const fn const_bit_xor(&(mut lhs): &u206265, rhs: &u206265) -> u206265 {
+    let lhs_bytes = lhs.significant_bytes();
+    let rhs_bytes = rhs.significant_bytes();
+    let bytes = if lhs_bytes >= rhs_bytes {
+        lhs_bytes
+    } else {
+        rhs_bytes
+    };
+    const_for!(i in 0..bytes => {
+        lhs.0[i] ^= rhs.0[i];
+    });
+    lhs
+}
