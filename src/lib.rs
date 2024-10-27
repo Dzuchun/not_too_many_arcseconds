@@ -48,6 +48,18 @@ impl u206265 {
         }
     }
 
+    pub const fn significant_bytes_u32(&self) -> u32 {
+        let res_usize = self.significant_bytes();
+        debug_assert!(res_usize < BYTES);
+        let _ = &BITS_U32;
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "BITS_U32 exists, and usize result is less than total number of bytes - it's safe to cast"
+        )]
+        let res = res_usize as u32;
+        res
+    }
+
     pub fn significant_bytes_slice(&self) -> &[u8] {
         &self.0[..self.significant_bytes()]
     }
