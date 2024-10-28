@@ -16,13 +16,13 @@ macro_rules! test_from_into {
 
                     // FORM
                     // act
-                    let the_u206265 = u206265::try_from(input);
+                    let the_u206265 = u206265::[<try_from_$type>](input);
 
                     // assert
                     #[allow(unused_comparisons, reason = "This macro tests both signed and unsigned types")]
-                    {assert_eq!(the_u206265.is_ok(), input >= 0);}
+                    {assert_eq!(the_u206265.is_some(), input >= 0);}
                     #[allow(irrefutable_let_patterns, reason = "This macro tests both signed and unsigned types")]
-                    let Ok(the_u206265) = the_u206265 else {
+                    let Some(the_u206265) = the_u206265 else {
                         continue;
                     };
 

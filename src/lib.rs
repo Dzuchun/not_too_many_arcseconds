@@ -76,17 +76,54 @@ use pure_rust_impl::{
 
 macro_rules! impl_from_unsigned {
     ($type:ty) => {
+        ::paste::paste! {
+            impl u206265 {
+                #[inline]
+                pub const fn [<from_ $type>](value: $type) -> Self {
+                    create_bytes(value.to_le_bytes())
+                }
+
+                #[inline]
+                pub const fn [<try_from_ $type>](value: $type) -> Option<Self> {
+                    Some(Self::[<from_ $type>](value))
+                }
+
+                #[inline]
+                pub const fn [<try_into_ $type>](self) -> Result<$type, u206265ToUnsigned> {
+                    const BITS_U32: u32 = $type::BITS;
+                    const TYPE_BITS: usize = BITS_U32 as usize;
+                    const TYPE_BYTES: usize = TYPE_BITS >> 3;
+                    use ::const_for::const_for;
+                    let mut bytes: [u8; TYPE_BYTES] = [0u8; TYPE_BYTES];
+                    const_for!(i in 0..TYPE_BYTES => {
+                        bytes[i] = self.0[i];
+                    });
+                    let significant_length = self.significant_bytes();
+                    if significant_length > bytes.len() {
+                        return Err(u206265ToUnsigned {
+                            min_bytes: significant_length,
+                        });
+                    }
+                    Ok($type::from_le_bytes(bytes))
+                }
+            }
+        }
+
         impl From<$type> for u206265 {
             #[inline]
             fn from(value: $type) -> Self {
-                create_bytes(value.to_le_bytes())
+                ::paste::paste! {
+                    Self::[<from_ $type>](value)
+                }
             }
         }
 
         impl<'from> From<&'from $type> for u206265 {
             #[inline]
-            fn from(value: &$type) -> Self {
-                Self::from(*value)
+            fn from(&value: &$type) -> Self {
+                ::paste::paste! {
+                    Self::[<from_ $type>](value)
+                }
             }
         }
     };
@@ -99,25 +136,44 @@ impl_from_unsigned!(u64);
 impl_from_unsigned!(u128);
 impl_from_unsigned!(usize);
 
+pub struct NegativeIntError(());
+
 macro_rules! impl_from_signed {
     ($itype:ty, $utype:ty) => {
+        ::paste::paste! {
+            impl u206265 {
+                #[inline]
+                pub const fn [<try_from_ $itype>](value: $itype) -> Option<Self> {
+                    if value >= 0 {
+                        #[allow(clippy::cast_sign_loss, reason = "We're checking right above for that")]
+                        let uvalue = value as $utype;
+                        Some(Self::[<from_ $utype>](uvalue))
+                    } else {
+                        None
+                    }
+                }
+            }
+        }
+
         impl TryFrom<$itype> for u206265 {
-            type Error = <$utype as TryFrom<$itype>>::Error;
+            type Error = NegativeIntError;
 
             #[inline]
             fn try_from(value: $itype) -> Result<Self, Self::Error> {
-                let unsigned: $utype = value.try_into()?;
-                Ok(u206265::from(unsigned))
+                ::paste::paste!{
+                    Self::[<try_from_ $itype>](value).ok_or(NegativeIntError(()))
+                }
             }
         }
 
         impl<'from> TryFrom<&'from $itype> for u206265 {
-            type Error = <$utype as TryFrom<$itype>>::Error;
+            type Error = NegativeIntError;
 
             #[inline]
             fn try_from(&value: &$itype) -> Result<Self, Self::Error> {
-                let unsigned: $utype = value.try_into()?;
-                Ok(u206265::from(unsigned))
+                ::paste::paste!{
+                    Self::[<try_from_ $itype>](value).ok_or(NegativeIntError(()))
+                }
             }
         }
     };
@@ -142,17 +198,9 @@ macro_rules! impl_try_from_unsigned {
             type Error = u206265ToUnsigned;
 
             fn try_from(value: u206265) -> Result<Self, Self::Error> {
-                let bytes = *value
-                    .0
-                    .first_chunk()
-                    .expect("Primitive integers should not be larger than 206265 bytes");
-                let significant_length = value.significant_bytes();
-                if significant_length > bytes.len() {
-                    return Err(u206265ToUnsigned {
-                        min_bytes: significant_length,
-                    });
+                ::paste::paste! {
+                    u206265::[<try_into_ $type>](value)
                 }
-                Ok(Self::from_le_bytes(bytes))
             }
         }
 
@@ -160,8 +208,10 @@ macro_rules! impl_try_from_unsigned {
             type Error = u206265ToUnsigned;
 
             #[inline]
-            fn try_from(value: &u206265) -> Result<Self, Self::Error> {
-                Self::try_from(*value)
+            fn try_from(&value: &u206265) -> Result<Self, Self::Error> {
+                ::paste::paste! {
+                    u206265::[<try_into_ $type>](value)
+                }
             }
         }
     };
