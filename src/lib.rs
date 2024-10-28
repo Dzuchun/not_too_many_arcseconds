@@ -22,7 +22,8 @@ const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206
 
 // little-endian
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "copy", derive(Copy))]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
 
 impl u206265 {
@@ -62,6 +63,10 @@ impl u206265 {
 
     pub fn significant_bytes_slice(&self) -> &[u8] {
         &self.0[..self.significant_bytes()]
+    }
+
+    pub const fn const_clone(&self) -> Self {
+        Self(self.0)
     }
 }
 
@@ -120,9 +125,9 @@ macro_rules! impl_from_unsigned {
 
         impl<'from> From<&'from $type> for u206265 {
             #[inline]
-            fn from(&value: &$type) -> Self {
+            fn from(value: &$type) -> Self {
                 ::paste::paste! {
-                    Self::[<from_ $type>](value)
+                    Self::[<from_ $type>](value.clone())
                 }
             }
         }
@@ -170,9 +175,9 @@ macro_rules! impl_from_signed {
             type Error = NegativeIntError;
 
             #[inline]
-            fn try_from(&value: &$itype) -> Result<Self, Self::Error> {
+            fn try_from(value: &$itype) -> Result<Self, Self::Error> {
                 ::paste::paste!{
-                    Self::[<try_from_ $itype>](value).ok_or(NegativeIntError(()))
+                    Self::[<try_from_ $itype>](value.clone()).ok_or(NegativeIntError(()))
                 }
             }
         }
@@ -208,9 +213,9 @@ macro_rules! impl_try_from_unsigned {
             type Error = u206265ToUnsigned;
 
             #[inline]
-            fn try_from(&value: &u206265) -> Result<Self, Self::Error> {
+            fn try_from(value: &u206265) -> Result<Self, Self::Error> {
                 ::paste::paste! {
-                    u206265::[<try_into_ $type>](value)
+                    u206265::[<try_into_ $type>](value.clone())
                 }
             }
         }

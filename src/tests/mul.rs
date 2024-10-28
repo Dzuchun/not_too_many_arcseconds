@@ -24,7 +24,7 @@ fn mul() {
 
         // assert
         assert!(!the_ov, "Multiplying two u128 cannot result in overflow");
-        let mul2 = u128::try_from(the_mul);
+        let mul2 = u128::try_from(the_mul.const_clone());
         if ov {
             assert_eq!(
                 mul2,
@@ -60,7 +60,7 @@ fn mul_small() {
 
         // assert
         assert!(!the_ov, "Multiplying two u8 cannot result in overflow");
-        let mul2 = u8::try_from(the_mul);
+        let mul2 = u8::try_from(the_mul.const_clone());
         if ov {
             assert_eq!(
                 mul2,

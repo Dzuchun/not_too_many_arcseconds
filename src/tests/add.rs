@@ -23,7 +23,7 @@ fn add() {
         let (the_sum, the_ov) = crate::const_add(&the_lhs, &the_rhs);
 
         // assert
-        let sum2 = u128::try_from(the_sum);
+        let sum2 = u128::try_from(the_sum.const_clone());
         dbg!(the_sum.significant_bytes());
         assert!(!the_ov, "Adding two u128 cannot result in overflow");
         if ov {

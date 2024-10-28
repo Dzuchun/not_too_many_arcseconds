@@ -24,8 +24,8 @@ fn sub() {
 
         // assert
         assert_eq!(ov, the_ov, "Overflow flags should be the same");
-        let sub2 = u128::try_from(the_sub);
         dbg!(the_sub.significant_bytes());
+        let sub2 = u128::try_from(the_sub);
         if ov {
             assert_eq!(sub2, Err(u206265ToUnsigned { min_bytes: BYTES }),);
         } else if sub2 != Ok(sub) {
