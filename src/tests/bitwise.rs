@@ -20,7 +20,7 @@ fn and() {
         let the_rhs = u206265::from(rhs);
 
         // act
-        let the_and = crate::const_bit_and(&the_lhs, &the_rhs);
+        let the_and = crate::const_bitand(&the_lhs, &the_rhs);
 
         // assert
         let and2 = u128::try_from(the_and).expect("ANDing two u128 should still be a valid u128");
@@ -42,7 +42,7 @@ fn or() {
         let the_rhs = u206265::from(rhs);
 
         // act
-        let the_or = crate::const_bit_or(&the_lhs, &the_rhs);
+        let the_or = crate::const_bitor(&the_lhs, &the_rhs);
 
         // assert
         let or2 = u128::try_from(the_or).expect("ANDing two u128 should still be a valid u128");
@@ -64,7 +64,7 @@ fn xor() {
         let the_rhs = u206265::from(rhs);
 
         // act
-        let the_xor = crate::const_bit_xor(&the_lhs, &the_rhs);
+        let the_xor = crate::const_bitxor(&the_lhs, &the_rhs);
 
         // assert
         let xor2 = u128::try_from(the_xor).expect("ANDing two u128 should still be a valid u128");

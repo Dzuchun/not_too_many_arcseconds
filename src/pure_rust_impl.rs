@@ -102,8 +102,9 @@ pub const fn const_shr(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
     (result, overflow)
 }
 
-pub const fn const_add(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
-    let mut lhs = lhs.const_clone();
+/// ### Returns
+/// If overflow had occurred
+pub const fn const_add_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     let significant_length = {
         let mut sl;
         let lhs = lhs.significant_bytes();
@@ -137,27 +138,33 @@ pub const fn const_add(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
         lhs.0[i] = sum;
     });
 
-    let overflow;
     if significant_length == BYTES {
         match lhs.0[BYTES - 1] {
-            0 | 1 => overflow = false,
+            0 | 1 => false,
             2 => {
-                overflow = true;
                 lhs.0[BYTES - 1] = 0;
+                true
             }
             3 => {
-                overflow = true;
                 lhs.0[BYTES - 1] = 1;
+                true
             }
             4.. => panic!("Most-significant bit cannot be 4 or more"),
         }
     } else {
-        overflow = false;
+        false
     }
-    (lhs, overflow)
 }
 
-pub const fn const_sub(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
+pub const fn const_add(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
+    let mut result = lhs.const_clone();
+    let overflow = const_add_assign(&mut result, rhs);
+    (result, overflow)
+}
+
+/// ### Returns
+/// If underflow had occurred
+pub const fn const_sub_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     let mut lhs = lhs.const_clone();
     let mut borrow = 0u8;
     const_for!(i in 0..BYTES => {
@@ -176,15 +183,25 @@ pub const fn const_sub(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
         lhs.0[i] = sub;
     });
 
-    let underflow;
     match (lhs.0[BYTES - 1] & 0xFE, lhs.0[BYTES - 1] & 0x01) {
-        (0, 0 | 1) => underflow = false,
+        (0, 0 | 1) => false,
         (_, last) => {
-            underflow = true;
             lhs.0[BYTES - 1] = last;
+            true
         }
     }
-    (lhs, underflow)
+}
+
+pub const fn const_sub(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
+    let mut result = lhs.const_clone();
+    let underflow = const_sub_assign(&mut result, rhs);
+    (result, underflow)
+}
+
+pub const fn const_mul_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
+    let (result, overflow) = const_mul(lhs, rhs);
+    *lhs = result;
+    overflow
 }
 
 pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
@@ -312,47 +329,32 @@ pub const fn const_ilog2(val: &u206265) -> Option<u32> {
     Some((val.significant_bytes_u32() - 1) * 8 + high_byte_bit)
 }
 
-pub const fn const_bit_and(lhs: &u206265, rhs: &u206265) -> u206265 {
-    let mut lhs = lhs.const_clone();
-    let lhs_bytes = lhs.significant_bytes();
-    let rhs_bytes = rhs.significant_bytes();
-    let bytes = if lhs_bytes >= rhs_bytes {
-        lhs_bytes
-    } else {
-        rhs_bytes
+macro_rules! bit_op {
+    ($op_name:ident, $op_assign:tt) => {
+        ::paste::paste! {
+            pub const fn [<const_ $op_name _assign>](lhs: &mut u206265, rhs: &u206265) {
+                let lhs_bytes = lhs.significant_bytes();
+                let rhs_bytes = rhs.significant_bytes();
+                let bytes = if lhs_bytes >= rhs_bytes {
+                    lhs_bytes
+                } else {
+                    rhs_bytes
+                };
+                const_for!(i in 0..bytes => {
+                    lhs.0[i] $op_assign rhs.0[i];
+                });
+            }
+
+            #[inline]
+            pub const fn [<const_ $op_name>](lhs: &u206265, rhs: &u206265) -> u206265 {
+                let mut lhs = lhs.const_clone();
+                [<const_ $op_name _assign>](&mut lhs, rhs);
+                lhs
+            }
+        }
     };
-    const_for!(i in 0..bytes => {
-        lhs.0[i] &= rhs.0[i];
-    });
-    lhs
 }
 
-pub const fn const_bit_or(lhs: &u206265, rhs: &u206265) -> u206265 {
-    let mut lhs = lhs.const_clone();
-    let lhs_bytes = lhs.significant_bytes();
-    let rhs_bytes = rhs.significant_bytes();
-    let bytes = if lhs_bytes >= rhs_bytes {
-        lhs_bytes
-    } else {
-        rhs_bytes
-    };
-    const_for!(i in 0..bytes => {
-        lhs.0[i] |= rhs.0[i];
-    });
-    lhs
-}
-
-pub const fn const_bit_xor(lhs: &u206265, rhs: &u206265) -> u206265 {
-    let mut lhs = lhs.const_clone();
-    let lhs_bytes = lhs.significant_bytes();
-    let rhs_bytes = rhs.significant_bytes();
-    let bytes = if lhs_bytes >= rhs_bytes {
-        lhs_bytes
-    } else {
-        rhs_bytes
-    };
-    const_for!(i in 0..bytes => {
-        lhs.0[i] ^= rhs.0[i];
-    });
-    lhs
-}
+bit_op! {bitand, &=}
+bit_op! {bitor, |=}
+bit_op! {bitxor, ^=}
