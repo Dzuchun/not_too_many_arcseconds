@@ -6,7 +6,7 @@ use super::ITERATIONS;
 
 #[cfg_attr(debug_assertions, ignore)]
 #[test]
-fn div() {
+fn div_rem() {
     let mut rng = thread_rng();
 
     for _ in 0..ITERATIONS {
@@ -20,14 +20,14 @@ fn div() {
         let the_rhs = u206265::from(rhs);
 
         // act
-        let the_res = crate::const_div(&the_lhs, &the_rhs);
+        let the_result = crate::const_div_rem(&the_lhs, &the_rhs);
 
         // assert
         assert!(
-            !(the_res.is_some() != div.is_some() || (the_res.is_some() != rem.is_some())),
+            !(the_result.is_some() != div.is_some() || (the_result.is_some() != rem.is_some())),
             "Option variants are not the same:\n{lhs} / {rhs}\n({div:?}, {rem:?})"
         );
-        let (Some(div), Some(rem), Some((the_div, the_rem))) = (div, rem, the_res) else {
+        let (Some(div), Some(rem), Some((the_div, the_rem))) = (div, rem, the_result) else {
             continue;
         };
         let div2 = u128::try_from(the_div).unwrap();

@@ -258,7 +258,7 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     (u206265(result), overflow)
 }
 
-pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u206265)> {
+pub const fn const_div_rem(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u206265)> {
     if const_cmp(rhs, &u206265::ZERO).is_eq() {
         return None;
     }
@@ -280,6 +280,34 @@ pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u206265
         result = const_add(&result, &res_add).0;
     });
     Some((result, remainder))
+}
+
+#[inline]
+pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<u206265> {
+    if let Some((result, _)) = const_div_rem(lhs, rhs) {
+        Some(result)
+    } else {
+        None
+    }
+}
+
+#[inline]
+pub const fn const_rem(lhs: &u206265, rhs: &u206265) -> Option<u206265> {
+    if let Some((_, result)) = const_div_rem(lhs, rhs) {
+        Some(result)
+    } else {
+        None
+    }
+}
+
+#[inline]
+pub const fn const_div_assign(lhs: &mut u206265, rhs: &u206265) {
+    *lhs = const_div(lhs, rhs).expect("Division by zero");
+}
+
+#[inline]
+pub const fn const_rem_assign(lhs: &mut u206265, rhs: &u206265) {
+    *lhs = const_rem(lhs, rhs).expect("Division by zero");
 }
 
 pub const fn const_ilog(val: &u206265, base: &u206265) -> Option<u32> {
