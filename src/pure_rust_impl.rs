@@ -41,9 +41,9 @@ pub const fn const_cmp(lhs: &u206265, rhs: &u206265) -> Ordering {
     Ordering::Equal
 }
 
-pub const fn const_shl(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
-    let mut result = lhs.const_clone();
-
+/// ### Returns
+/// If overflow had occurred
+pub const fn const_shl_assign(lhs: &mut u206265, mut rhs: u32) -> bool {
     // first, do the same thing std does, for consistency
     let overflow;
     if rhs >= BITS_U32 {
@@ -56,24 +56,30 @@ pub const fn const_shl(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
     // first, apply the whole-byte shift
     let byte_shift = (rhs >> 3) as usize;
     if byte_shift > 0 {
-        const_for!(i in (byte_shift..BYTES).rev() => result.0[i] = result.0[i-byte_shift]);
-        const_for!(i in 0..byte_shift => result.0[i] = 0);
+        const_for!(i in (byte_shift..BYTES).rev() => lhs.0[i] = lhs.0[i-byte_shift]);
+        const_for!(i in 0..byte_shift => lhs.0[i] = 0);
     }
 
     // then, the subbyte shift
     let subbyte_shift = rhs & 0b111;
     let mut carry = 0u16;
     const_for!(i in byte_shift..BYTES => {
-        carry += (result.0[i] as u16) << subbyte_shift;
-        result.0[i] = (carry & 0x00FF) as u8;
+        carry += (lhs.0[i] as u16) << subbyte_shift;
+        lhs.0[i] = (carry & 0x00FF) as u8;
         carry >>= 8;
     });
+    overflow
+}
+
+pub const fn const_shl(lhs: &u206265, rhs: u32) -> (u206265, bool) {
+    let mut result = lhs.const_clone();
+    let overflow = const_shl_assign(&mut result, rhs);
     (result, overflow)
 }
 
-pub const fn const_shr(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
-    let mut result = lhs.const_clone();
-
+/// ### Returns
+/// If overflow had occurred
+pub const fn const_shr_assign(result: &mut u206265, mut rhs: u32) -> bool {
     // first, do the same thing std does, for consistency
     let overflow;
     if rhs >= BITS_U32 {
@@ -99,6 +105,12 @@ pub const fn const_shr(lhs: &u206265, mut rhs: u32) -> (u206265, bool) {
         result.0[i] = (carry >> 8) as u8;
         carry <<= 8;
     });
+    overflow
+}
+
+pub const fn const_shr(lhs: &u206265, rhs: u32) -> (u206265, bool) {
+    let mut result = lhs.const_clone();
+    let overflow = const_shr_assign(&mut result, rhs);
     (result, overflow)
 }
 
