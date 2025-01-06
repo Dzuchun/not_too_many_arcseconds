@@ -22,7 +22,7 @@ const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206
 
 // little-endian
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "copy", derive(Copy))]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
 
@@ -445,6 +445,20 @@ macro_rules! impl_sh {
 
 impl_sh!(Shl);
 impl_sh!(Shr);
+
+impl PartialOrd for u206265 {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for u206265 {
+    #[inline]
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        const_cmp(self, other)
+    }
+}
 
 #[cfg(test)]
 mod tests;
