@@ -1,29 +1,17 @@
-use rand::{thread_rng, Rng};
-
 use crate::u206265;
-
-use super::ITERATIONS;
 
 macro_rules! test_from_into {
     ($type:ty) => {
         ::paste::paste! {
-            #[test]
-            fn [<from_into_ $type>]() {
-                let mut rng = thread_rng();
-                for _ in 0..ITERATIONS {
-                    // arrange
-                    let input: $type = rng.r#gen();
-
-                    // FORM
+            quickcheck! {
+                fn [<from_into_ $type>](input: $type) -> bool {
+                    // FROM
                     // act
-                    let the_u206265 = u206265::[<try_from_$type>](input);
+                    let the_u206265 = u206265::[<try_from_ $type>](input);
 
                     // assert
-                    #[allow(unused_comparisons, reason = "This macro tests both signed and unsigned types")]
-                    {assert_eq!(the_u206265.is_some(), input >= 0);}
-                    #[allow(irrefutable_let_patterns, reason = "This macro tests both signed and unsigned types")]
                     let Some(the_u206265) = the_u206265 else {
-                        continue;
+                        return input < 0;
                     };
 
                     // INTO
@@ -31,11 +19,7 @@ macro_rules! test_from_into {
                     let back = $type::try_from(&the_u206265);
 
                     // assert
-                    assert_eq!(
-                        back,
-                        Ok(input),
-                        "From-Into convertion should return identical value"
-                    );
+                    back == Ok(input)
                 }
             }
         }
@@ -55,6 +39,40 @@ test_from_into!(i32);
 test_from_into!(i64);
 test_from_into!(i128);
 test_from_into!(isize);
+
+macro_rules! special_from_into {
+    ($input:ident, $type:ty) => {
+        ::paste::paste! {
+            #[test]
+            fn [<special_from_into_ $input:lower>]() {
+                let input: $type = $input;
+                // FROM
+                // act
+                let the_u206265 = u206265::[<try_from_ $type>](input);
+
+                // assert
+                let Some(the_u206265) = the_u206265 else {
+                    #[allow(unused_comparisons)]
+                    {if input >= 0 {
+                        panic!("Could not convert positive value {input}");
+                    } else {
+                        return;
+                    }}
+                };
+
+                // INTO
+                // act
+                let back = $type::try_from(&the_u206265);
+
+                // assert
+                assert_eq!(back, Ok(input))
+            }
+        }
+    };
+}
+
+const U128_MAX: u128 = u128::MAX;
+special_from_into!(U128_MAX, u128);
 
 macro_rules! test_from_repr {
     ($from:expr, [$($expected:literal), +]) => {

@@ -1,18 +1,8 @@
-use rand::{thread_rng, Rng};
-
 use crate::u206265;
 
-use super::ITERATIONS;
-
-#[cfg_attr(debug_assertions, ignore)]
-#[test]
-fn div_rem() {
-    let mut rng = thread_rng();
-
-    for _ in 0..ITERATIONS {
+quickcheck! {
+    fn div_rem(lhs: u128, rhs: u128) -> bool {
         // arrange
-        let lhs: u128 = rng.gen();
-        let rhs: u128 = rng.gen();
         let div = lhs.checked_div(rhs);
         let rem = lhs.checked_rem(rhs);
 
@@ -23,16 +13,14 @@ fn div_rem() {
         let the_result = crate::const_div_rem(&the_lhs, &the_rhs);
 
         // assert
-        assert!(
-            !(the_result.is_some() != div.is_some() || (the_result.is_some() != rem.is_some())),
-            "Option variants are not the same:\n{lhs} / {rhs}\n({div:?}, {rem:?})"
-        );
-        let (Some(div), Some(rem), Some((the_div, the_rem))) = (div, rem, the_result) else {
-            continue;
+        let (div, rem, the_div, the_rem) = match (div, rem, the_result) {
+            (None, None, None) => return true, // correctly caught division by 0
+            (Some(div), Some(rem), Some((the_div, the_rem))) => (div, rem, the_div, the_rem),
+            _ => unreachable!("Option variants must be the same!"),
         };
+
         let div2 = u128::try_from(the_div).unwrap();
         let rem2 = u128::try_from(the_rem).unwrap();
-        assert_eq!(div, div2, "Failed comparing divs");
-        assert_eq!(rem, rem2, "Failed comparing remainders");
+        (div == div2) && (rem == rem2)
     }
 }

@@ -1,17 +1,8 @@
-use rand::{thread_rng, Rng};
-
 use crate::u206265;
 
-use super::ITERATIONS;
-
-#[test]
-fn ilog() {
-    let mut rng = thread_rng();
-
-    for _ in 0..ITERATIONS {
+quickcheck! {
+    fn ilog(val: u128, base: u128) -> bool {
         // arrange
-        let val: u128 = rng.gen();
-        let base: u128 = rng.r#gen();
         let log = val.checked_ilog(base);
 
         let the_val = u206265::from(val);
@@ -21,7 +12,7 @@ fn ilog() {
         let log2 = crate::const_ilog(&the_val, &the_base);
 
         // assert
-        assert_eq!(log, log2, "For log({base}, {val})");
+        log == log2
     }
 }
 
@@ -54,13 +45,9 @@ test_ilog_special!(11u128, 10);
 test_ilog_special!(100u128, 10);
 test_ilog_special!(999_999_999_999u128, 10);
 
-#[test]
-fn ilog10() {
-    let mut rng = thread_rng();
-
-    for _ in 0..ITERATIONS {
+quickcheck! {
+    fn ilog10(val: u128) -> bool {
         // arrange
-        let val: u128 = rng.gen();
         let log = val.checked_ilog10();
 
         let the_val = u206265::from(val);
@@ -69,17 +56,13 @@ fn ilog10() {
         let log2 = crate::const_ilog10(&the_val);
 
         // assert
-        assert_eq!(log, log2, "For log10({val})");
+        log == log2
     }
 }
 
-#[test]
-fn ilog2() {
-    let mut rng = thread_rng();
-
-    for _ in 0..ITERATIONS {
+quickcheck! {
+    fn ilog2(val: u128) -> bool {
         // arrange
-        let val: u128 = rng.gen();
         let log = val.checked_ilog2();
 
         let the_val = u206265::from(val);
@@ -88,7 +71,7 @@ fn ilog2() {
         let log2 = crate::const_ilog2(&the_val);
 
         // assert
-        assert_eq!(log, log2, "For log2({val})");
+        log == log2
     }
 }
 

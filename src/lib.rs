@@ -1,8 +1,5 @@
 #![no_std]
 
-#[cfg(test)]
-extern crate std;
-
 const BITS: usize = 206_265;
 const BITS_U32: u32 = {
     use crate::BITS;
@@ -489,6 +486,10 @@ impl Ord for u206265 {
         const_cmp(self, other)
     }
 }
+
+#[cfg_attr(test, macro_use)]
+#[cfg(test)]
+extern crate quickcheck;
 
 #[cfg(test)]
 mod tests;
