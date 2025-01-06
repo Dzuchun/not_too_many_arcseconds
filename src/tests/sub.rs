@@ -27,7 +27,12 @@ fn sub() {
         dbg!(the_sub.significant_bytes());
         let sub2 = u128::try_from(the_sub);
         if ov {
-            assert_eq!(sub2, Err(u206265ToUnsigned { min_bytes: BYTES }),);
+            assert_eq!(
+                sub2,
+                Err(u206265ToUnsigned {
+                    bytes_required: BYTES
+                }),
+            );
         } else if sub2 != Ok(sub) {
             eprintln!("Failed for {lhs} - {rhs}");
             if let Ok(sub2) = sub2 {

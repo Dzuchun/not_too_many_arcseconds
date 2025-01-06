@@ -28,7 +28,7 @@ macro_rules! test_from_into {
 
                     // INTO
                     // act
-                    let back = $type::try_from(the_u206265);
+                    let back = $type::try_from(&the_u206265);
 
                     // assert
                     assert_eq!(

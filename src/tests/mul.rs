@@ -29,7 +29,7 @@ fn mul() {
             assert_eq!(
                 mul2,
                 Err(u206265ToUnsigned {
-                    min_bytes: the_mul.significant_bytes()
+                    bytes_required: the_mul.significant_bytes()
                 }),
             );
         } else if mul2 != Ok(mul) {
@@ -65,7 +65,7 @@ fn mul_small() {
             assert_eq!(
                 mul2,
                 Err(u206265ToUnsigned {
-                    min_bytes: the_mul.significant_bytes()
+                    bytes_required: the_mul.significant_bytes()
                 }),
                 "Caused by {lhs} * {rhs}"
             );

@@ -30,7 +30,7 @@ fn add() {
             assert_eq!(
                 sum2,
                 Err(u206265ToUnsigned {
-                    min_bytes: 128 / 8 + 1
+                    bytes_required: 128 / 8 + 1
                 }),
             );
         } else if sum2 != Ok(sum) {

@@ -72,29 +72,37 @@ impl u206265 {
 
 mod pure_rust_impl;
 
-use core::ops::{Add, AddAssign};
-
-use pure_rust_impl::{
-    const_add, const_bit_and, const_bit_or, const_bit_xor, const_cmp, const_div, const_ilog,
-    const_ilog10, const_ilog2, const_mul, const_shl, const_shr, const_sub, create_bytes,
+pub use pure_rust_impl::{
+    const_add, const_add_assign, const_bitand, const_bitand_assign, const_bitor,
+    const_bitor_assign, const_bitxor, const_bitxor_assign, const_cmp, const_div, const_div_assign,
+    const_div_rem, const_ilog, const_ilog10, const_ilog2, const_mul, const_mul_assign, const_rem,
+    const_rem_assign, const_shl, const_shl_assign, const_shr, const_shr_assign, const_sub,
+    const_sub_assign, create_bytes,
 };
 
-macro_rules! impl_from_unsigned {
+#[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct u206265ToUnsigned {
+    pub bytes_required: usize,
+}
+
+macro_rules! impl_unsigned {
     ($type:ty) => {
         ::paste::paste! {
             impl u206265 {
+                // Compatibility function, always succeeds
+                #[inline]
+                pub const fn [<try_from_ $type>](value: $type) -> Option<Self> {
+                    Some(create_bytes(value.to_le_bytes()))
+                }
+
                 #[inline]
                 pub const fn [<from_ $type>](value: $type) -> Self {
                     create_bytes(value.to_le_bytes())
                 }
 
                 #[inline]
-                pub const fn [<try_from_ $type>](value: $type) -> Option<Self> {
-                    Some(Self::[<from_ $type>](value))
-                }
-
-                #[inline]
-                pub const fn [<try_into_ $type>](self) -> Result<$type, u206265ToUnsigned> {
+                pub const fn [<try_into_ $type>](&self) -> Result<$type, u206265ToUnsigned> {
                     const BITS_U32: u32 = $type::BITS;
                     const TYPE_BITS: usize = BITS_U32 as usize;
                     const TYPE_BYTES: usize = TYPE_BITS >> 3;
@@ -106,44 +114,66 @@ macro_rules! impl_from_unsigned {
                     let significant_length = self.significant_bytes();
                     if significant_length > bytes.len() {
                         return Err(u206265ToUnsigned {
-                            min_bytes: significant_length,
+                            bytes_required: significant_length,
                         });
                     }
                     Ok($type::from_le_bytes(bytes))
                 }
             }
-        }
 
-        impl From<$type> for u206265 {
-            #[inline]
-            fn from(value: $type) -> Self {
-                ::paste::paste! {
+            impl From<$type> for u206265 {
+                #[inline]
+                fn from(value: $type) -> Self {
                     Self::[<from_ $type>](value)
                 }
             }
-        }
 
-        impl<'from> From<&'from $type> for u206265 {
-            #[inline]
-            fn from(value: &$type) -> Self {
-                ::paste::paste! {
-                    Self::[<from_ $type>](value.clone())
+            impl<'from> From<&'from $type> for u206265 {
+                #[inline]
+                fn from(&value: &$type) -> Self {
+                    // copying "normal" integer, ok to do
+                    Self::from(value)
+                }
+            }
+
+            impl TryFrom<u206265> for $type {
+                type Error = u206265ToUnsigned;
+
+                #[inline]
+                fn try_from(value: u206265) -> Result<Self, Self::Error> {
+                    Self::try_from(&value)
+                }
+            }
+
+            impl<'from> TryFrom<&'from u206265> for $type {
+                type Error = u206265ToUnsigned;
+
+                #[inline]
+                fn try_from(value: &u206265) -> Result<Self, Self::Error> {
+                    u206265:: [<try_into_ $type>](value)
                 }
             }
         }
     };
 }
 
-impl_from_unsigned!(u8);
-impl_from_unsigned!(u16);
-impl_from_unsigned!(u32);
-impl_from_unsigned!(u64);
-impl_from_unsigned!(u128);
-impl_from_unsigned!(usize);
+impl_unsigned!(u8);
+impl_unsigned!(u16);
+impl_unsigned!(u32);
+impl_unsigned!(u64);
+impl_unsigned!(u128);
+impl_unsigned!(usize);
 
 pub struct NegativeIntError(());
 
-macro_rules! impl_from_signed {
+#[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum u206265ToSigned {
+    Unsigned(u206265ToUnsigned),
+    Signed,
+}
+
+macro_rules! impl_signed {
     ($itype:ty, $utype:ty) => {
         ::paste::paste! {
             impl u206265 {
@@ -157,151 +187,264 @@ macro_rules! impl_from_signed {
                         None
                     }
                 }
+
+                #[inline]
+                pub const fn [<try_into_ $itype>](&self) -> Result<$itype, u206265ToSigned> {
+                    let unsigned: $utype = match u206265::[<try_into_ $utype>](self) {
+                        Ok(unsigned) => unsigned,
+                        Err(err) => return Err(u206265ToSigned::Unsigned(err)),
+                    };
+
+                    let signed: $itype;
+                    #[allow(clippy::cast_possible_wrap, reason = "It's being checked for right after")]
+                    {signed = unsigned as $itype}
+                    if signed >= 0 {
+                        Ok(signed)
+                    } else {
+                        Err(u206265ToSigned::Signed)
+                    }
+                }
             }
-        }
 
-        impl TryFrom<$itype> for u206265 {
-            type Error = NegativeIntError;
+            impl TryFrom<$itype> for u206265 {
+                type Error = NegativeIntError;
 
-            #[inline]
-            fn try_from(value: $itype) -> Result<Self, Self::Error> {
-                ::paste::paste!{
+                #[inline]
+                fn try_from(value: $itype) -> Result<Self, Self::Error> {
                     Self::[<try_from_ $itype>](value).ok_or(NegativeIntError(()))
                 }
             }
-        }
 
-        impl<'from> TryFrom<&'from $itype> for u206265 {
-            type Error = NegativeIntError;
+            impl<'from> TryFrom<&'from $itype> for u206265 {
+                type Error = NegativeIntError;
 
-            #[inline]
-            fn try_from(value: &$itype) -> Result<Self, Self::Error> {
-                ::paste::paste!{
-                    Self::[<try_from_ $itype>](value.clone()).ok_or(NegativeIntError(()))
+                #[inline]
+                fn try_from(&value: &$itype) -> Result<Self, Self::Error> {
+                    Self::try_from(value)
+                }
+            }
+
+            impl TryFrom<u206265> for $itype {
+                type Error = u206265ToSigned;
+
+                #[inline]
+                fn try_from(value: u206265) -> Result<Self, Self::Error> {
+                    <$itype as TryFrom<&u206265>>::try_from(&value)
+                }
+            }
+
+            impl<'from> TryFrom<&'from u206265> for $itype {
+                type Error = u206265ToSigned;
+
+                #[inline]
+                fn try_from(value: &u206265) -> Result<Self, Self::Error> {
+                    u206265::[<try_into_ $itype>](value)
                 }
             }
         }
     };
 }
 
-impl_from_signed!(i8, u8);
-impl_from_signed!(i16, u16);
-impl_from_signed!(i32, u32);
-impl_from_signed!(i64, u64);
-impl_from_signed!(i128, u128);
-impl_from_signed!(isize, usize);
+impl_signed!(i8, u8);
+impl_signed!(i16, u16);
+impl_signed!(i32, u32);
+impl_signed!(i64, u64);
+impl_signed!(i128, u128);
+impl_signed!(isize, usize);
 
-#[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct u206265ToUnsigned {
-    pub min_bytes: usize,
-}
-
-macro_rules! impl_try_from_unsigned {
-    ($type:ty) => {
-        impl TryFrom<u206265> for $type {
-            type Error = u206265ToUnsigned;
-
-            fn try_from(value: u206265) -> Result<Self, Self::Error> {
-                ::paste::paste! {
-                    u206265::[<try_into_ $type>](value)
+macro_rules! impl_op_common {
+    ($op:ident) => {
+        ::paste::paste! {
+            impl<'rhs> ::core::ops::[<$op:camel Assign>]<&'rhs u206265> for u206265 {
+                #[inline]
+                fn [<$op:lower _assign>](&mut self, rhs: &'rhs u206265) {
+                    [<const_ $op:lower _assign>](self, rhs);
                 }
             }
-        }
 
-        impl<'from> TryFrom<&'from u206265> for $type {
-            type Error = u206265ToUnsigned;
+            impl ::core::ops::[<$op:camel Assign>] for u206265 {
+                #[inline]
+                fn [<$op:lower _assign>](&mut self, rhs: u206265) {
+                    <u206265 as ::core::ops::[<$op:camel Assign>]<&u206265>>::[<$op:lower _assign>](self, &rhs);
+                }
+            }
 
-            #[inline]
-            fn try_from(value: &u206265) -> Result<Self, Self::Error> {
-                ::paste::paste! {
-                    u206265::[<try_into_ $type>](value.clone())
+            impl<'lhs, 'rhs> ::core::ops::[<$op:camel>]<u206265> for &'lhs u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: u206265) -> Self::Output {
+                    <&u206265 as ::core::ops::[<$op:camel>]>::[<$op:lower>](self, &rhs)
+                }
+            }
+
+            impl<'rhs> ::core::ops::[<$op:camel>]<&'rhs u206265> for u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: &Self) -> Self::Output {
+                    <&u206265 as ::core::ops::[<$op:camel>]>::[<$op:lower>](&self, rhs)
+                }
+            }
+
+            impl ::core::ops::[<$op:camel>]<u206265> for u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: Self) -> Self::Output {
+                    <&u206265 as ::core::ops::[<$op:camel>]>::[<$op:lower>](&self, &rhs)
                 }
             }
         }
     };
 }
 
-impl_try_from_unsigned!(u8);
-impl_try_from_unsigned!(u16);
-impl_try_from_unsigned!(u32);
-impl_try_from_unsigned!(u64);
-impl_try_from_unsigned!(u128);
-impl_try_from_unsigned!(usize);
+impl_op_common!(Add);
+impl_op_common!(Sub);
+impl_op_common!(Mul);
+impl_op_common!(Div);
+impl_op_common!(Rem);
+impl_op_common!(BitOr);
+impl_op_common!(BitAnd);
+impl_op_common!(BitXor);
 
-#[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum u206265ToSigned<Unsigned, Signed: TryFrom<Unsigned>> {
-    Unsigned(u206265ToUnsigned),
-    Sign(Signed::Error),
-}
+macro_rules! impl_op_overflow {
+    ($op:ident) => {
+        ::paste::paste! {
+            impl<'lhs, 'rhs> ::core::ops::[<$op:camel>]<&'rhs u206265> for &'lhs u206265 {
+                type Output = u206265;
 
-macro_rules! impl_try_from_signed {
-    ($utype:ty, $itype:ty) => {
-        impl TryFrom<u206265> for $itype {
-            type Error = u206265ToSigned<$utype, $itype>;
-
-            fn try_from(value: u206265) -> Result<Self, Self::Error> {
-                let unsigned: $utype = value.try_into().map_err(u206265ToSigned::Unsigned)?;
-                unsigned.try_into().map_err(u206265ToSigned::Sign)
+                #[inline]
+                fn [<$op:lower>](self, rhs: &'rhs u206265) -> Self::Output {
+                    let (result, overflow) = [<const_ $op:lower>](self, rhs);
+                    debug_assert!(!overflow, concat!("u206265 ", stringify!([<$op:lower>]), " overflow"));
+                    result
+                }
             }
         }
     };
 }
 
-impl_try_from_signed!(u8, i8);
-impl_try_from_signed!(u16, i16);
-impl_try_from_signed!(u32, i32);
-impl_try_from_signed!(u64, i64);
-impl_try_from_signed!(u128, i128);
-impl_try_from_signed!(usize, isize);
+impl_op_overflow!(Add);
+impl_op_overflow!(Sub);
+impl_op_overflow!(Mul);
 
-impl<'lhs, 'rhs> Add<&'rhs u206265> for &'lhs u206265 {
-    type Output = u206265;
+macro_rules! impl_op_division {
+    ($op:ident) => {
+        ::paste::paste! {
+            impl<'lhs, 'rhs> ::core::ops::[<$op:camel>]<&'rhs u206265> for &'lhs u206265 {
+                type Output = u206265;
 
-    #[inline]
-    fn add(self, rhs: &'rhs u206265) -> Self::Output {
-        let (result, overflow) = const_add(self, rhs);
-        debug_assert!(!overflow, "u206265 add overflow!");
-        result
-    }
+                #[inline]
+                fn [<$op:lower>](self, rhs: &'rhs u206265) -> Self::Output {
+                    [<const_ $op:lower>](self, rhs).expect("Division by zero")
+                }
+            }
+        }
+    };
 }
 
-impl<'rhs> Add<&'rhs u206265> for u206265 {
-    type Output = u206265;
+impl_op_division!(Div);
+impl_op_division!(Rem);
 
-    #[inline]
-    fn add(self, rhs: &Self) -> Self::Output {
-        let (sum, overflow) = const_add(&self, rhs);
-        debug_assert!(!overflow, "u206265 add overflow!");
-        sum
-    }
+macro_rules! impl_op {
+    ($op:ident) => {
+        ::paste::paste! {
+            impl<'lhs, 'rhs> ::core::ops::[<$op:camel>]<&'rhs u206265> for &'lhs u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: &'rhs u206265) -> Self::Output {
+                    [<const_ $op:lower>](self, rhs)
+                }
+            }
+        }
+    };
 }
 
-impl Add for u206265 {
-    type Output = u206265;
+impl_op!(BitOr);
+impl_op!(BitAnd);
+impl_op!(BitXor);
 
-    #[inline]
-    fn add(self, rhs: Self) -> Self::Output {
-        self.add(&rhs)
-    }
+macro_rules! impl_sh_rhs {
+    ($op:ident, $rhs:ident) => {
+        ::paste::paste! {
+            impl ::core::ops::[<$op:camel Assign>]<$rhs> for u206265 {
+                #[inline]
+                fn [<$op:lower _assign>](&mut self, rhs: $rhs) {
+                    [<const_ $op:lower _assign>](self, u32::try_from(rhs).expect("Shift overflow"));
+                }
+            }
+
+            impl<'rhs> ::core::ops::[<$op:camel Assign>]<&'rhs $rhs> for u206265 {
+                #[inline]
+                fn [<$op:lower _assign>](&mut self, rhs: &$rhs) {
+                    <u206265 as ::core::ops::[<$op:camel Assign>]<$rhs>>::[<$op:lower _assign>](self, rhs.clone());
+                }
+            }
+
+            impl ::core::ops::[<$op:camel>]<$rhs> for u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](mut self, rhs: $rhs) -> Self::Output {
+                    <u206265 as ::core::ops::[<$op:camel Assign>]<$rhs>>::[<$op:lower _assign>](&mut self, rhs);
+                    self
+                }
+            }
+
+            impl<'rhs> ::core::ops::[<$op:camel>]<&'rhs $rhs> for u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: &'rhs $rhs) -> Self::Output {
+                    <u206265 as ::core::ops::[<$op:camel>]<$rhs>>::[<$op:lower>](self, rhs.clone())
+                }
+            }
+
+            impl<'lhs> ::core::ops::[<$op:camel>]<$rhs> for &'lhs u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: $rhs) -> Self::Output {
+                    <u206265 as ::core::ops::[<$op:camel>]<$rhs>>::[<$op:lower>](self.clone(), rhs)
+                }
+            }
+
+            impl<'lhs, 'rhs> ::core::ops::[<$op:camel>]<&'rhs $rhs> for &'lhs u206265 {
+                type Output = u206265;
+
+                #[inline]
+                fn [<$op:lower>](self, rhs: &'rhs $rhs) -> Self::Output {
+                    <u206265 as ::core::ops::[<$op:camel>]<$rhs>>::[<$op:lower>](self.clone(), rhs.clone())
+                }
+            }
+        }
+    };
 }
 
-impl<'rhs> AddAssign<&'rhs u206265> for u206265 {
-    #[inline]
-    fn add_assign(&mut self, rhs: &'rhs u206265) {
-        let (sum, overflow) = const_add(self, rhs);
-        debug_assert!(!overflow, "u206265 add overflow!");
-        *self = sum;
-    }
+macro_rules! impl_sh {
+    ($op:ident) => {
+        impl_sh_rhs!($op, u8);
+        impl_sh_rhs!($op, u16);
+        impl_sh_rhs!($op, u32);
+        impl_sh_rhs!($op, u64);
+        impl_sh_rhs!($op, u128);
+        impl_sh_rhs!($op, usize);
+
+        impl_sh_rhs!($op, i8);
+        impl_sh_rhs!($op, i16);
+        impl_sh_rhs!($op, i32);
+        impl_sh_rhs!($op, i64);
+        impl_sh_rhs!($op, i128);
+        impl_sh_rhs!($op, isize);
+
+        impl_sh_rhs!($op, u206265);
+    };
 }
 
-impl AddAssign for u206265 {
-    #[inline]
-    fn add_assign(&mut self, rhs: u206265) {
-        *self += &rhs;
-    }
-}
+impl_sh!(Shl);
+impl_sh!(Shr);
 
 #[cfg(test)]
 mod tests;
