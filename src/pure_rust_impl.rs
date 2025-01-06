@@ -177,7 +177,6 @@ pub const fn const_add(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
 /// ### Returns
 /// If underflow had occurred
 pub const fn const_sub_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
-    let mut lhs = lhs.const_clone();
     let mut borrow = 0u8;
     const_for!(i in 0..BYTES => {
         let (sub, underflow) = lhs.0[i].overflowing_sub(borrow);
