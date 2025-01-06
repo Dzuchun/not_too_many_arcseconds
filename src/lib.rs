@@ -252,6 +252,36 @@ impl_signed!(i64, u64);
 impl_signed!(i128, u128);
 impl_signed!(isize, usize);
 
+macro_rules! max_const {
+    ($type:ty) => {
+        ::paste::paste! {
+            pub const [<MAX_ $type:upper>]: Self = Self::[<from_ $type>]($type::MAX);
+        }
+    };
+
+    ($type:ty, $utype:ty) => {
+        ::paste::paste! {
+            pub const [<MAX_ $type:upper>]: Self = Self::[<from_ $utype>]($type::MAX as $utype);
+        }
+    };
+}
+
+impl u206265 {
+    max_const!(u8);
+    max_const!(u16);
+    max_const!(u32);
+    max_const!(u64);
+    max_const!(u128);
+    max_const!(usize);
+
+    max_const!(i8, u8);
+    max_const!(i16, u16);
+    max_const!(i32, u32);
+    max_const!(i64, u64);
+    max_const!(i128, u128);
+    max_const!(isize, usize);
+}
+
 macro_rules! impl_op_common {
     ($op:ident) => {
         ::paste::paste! {
