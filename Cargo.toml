@@ -13,3 +13,15 @@ rand = "0.8.5"
 [features]
 default = []
 copy = []
+
+[lints.rust]
+rust_2018_idioms = { level = "deny", priority = -1 }
+# missing_debug_implementations = "deny"
+# missing_docs = "deny"
+unsafe_code = "forbid"
+
+[lints.rustdoc]
+broken_intra_doc_links = "forbid"
+
+[lints.clippy]
+module_name_repetitions = "allow"
