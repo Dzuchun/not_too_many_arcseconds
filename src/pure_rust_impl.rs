@@ -238,12 +238,7 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
             if rhs_power > rhs_bytes {
                 continue;
             }
-            let lhs = lhs.0[lhs_power];
-            let rhs = rhs.0[rhs_power];
-            let Some(power_mul) = (lhs as u16).checked_mul(rhs as u16) else {
-                panic!("Should not overflow on 2-integer multiplication of 1-byte integers");
-            };
-            carry += power_mul as u32;
+            carry += lhs.0[lhs_power] as u32 * rhs.0[rhs_power] as u32;
         });}
         result[power] = (carry & 0xFF) as u8;
         carry >>= 8;
