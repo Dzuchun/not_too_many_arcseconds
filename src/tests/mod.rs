@@ -4,6 +4,7 @@ mod add;
 mod bitwise;
 mod cmp;
 mod div;
+mod format;
 mod log;
 mod misc;
 mod mul;

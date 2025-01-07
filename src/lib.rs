@@ -69,7 +69,10 @@ impl u206265 {
 
 mod pure_rust_impl;
 
-use core::iter::{Product, Sum};
+use core::{
+    fmt::{Display, LowerHex, UpperHex},
+    iter::{Product, Sum},
+};
 
 pub use pure_rust_impl::{
     const_add, const_add_assign, const_bitand, const_bitand_assign, const_bitor,
@@ -512,9 +515,61 @@ impl Product for u206265 {
     }
 }
 
+impl LowerHex for u206265 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let highest_byte = self.significant_bytes().saturating_sub(1);
+        <u8 as core::fmt::LowerHex>::fmt(&self.0[highest_byte], f)?;
+        for i in (0..highest_byte).rev() {
+            write!(f, "{:02x}", self.0[i])?;
+        }
+        Ok(())
+    }
+}
+
+impl UpperHex for u206265 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let highest_byte = self.significant_bytes().saturating_sub(1);
+        <u8 as core::fmt::UpperHex>::fmt(&self.0[highest_byte], f)?;
+        for i in (0..highest_byte).rev() {
+            write!(f, "{:02X}", self.0[i])?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for u206265 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        const TEN: u206265 = u206265::from_u8(10);
+        const MAX_LENGTH: usize = 61091; // log10(u206265::MAX)
+        if self == &Self::ZERO {
+            return write!(f, "{}", 0);
+        }
+        let mut buf: [u8; MAX_LENGTH] = [0; MAX_LENGTH];
+        let mut buf_i = 0;
+        let mut val = self.clone();
+
+        while val != u206265::ZERO {
+            let (div, rem) = const_div_rem(&val, &TEN).unwrap();
+            val = div;
+            buf[buf_i] = rem.try_into_u8().unwrap();
+            buf_i += 1;
+        }
+
+        for i in (0..buf_i).rev() {
+            debug_assert!(buf[i] <= 9);
+            write!(f, "{}", buf[i])?;
+        }
+
+        Ok(())
+    }
+}
 #[cfg_attr(test, macro_use)]
 #[cfg(test)]
 extern crate quickcheck;
+
+#[cfg_attr(test, macro_use)]
+#[cfg(test)]
+extern crate alloc;
 
 #[cfg(test)]
 mod tests;
