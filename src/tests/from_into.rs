@@ -11,7 +11,8 @@ macro_rules! test_from_into {
 
                     // assert
                     let Some(the_u206265) = the_u206265 else {
-                        return input < 0;
+                        #[allow(unused_comparisons)]
+                        {return input < 0};
                     };
 
                     // INTO

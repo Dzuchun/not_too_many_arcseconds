@@ -19,7 +19,7 @@ const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206
 
 // little-endian
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "copy", derive(Copy))]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
 
@@ -161,6 +161,7 @@ impl_unsigned!(u64);
 impl_unsigned!(u128);
 impl_unsigned!(usize);
 
+#[derive(Debug)]
 pub struct NegativeIntError(());
 
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
