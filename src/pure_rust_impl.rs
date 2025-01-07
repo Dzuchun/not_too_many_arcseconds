@@ -251,18 +251,9 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
 
     let overflow;
     if max_power == BYTES {
-        match result[BYTES - 1] {
-            0 | 1 => overflow = false,
-            2 => {
-                overflow = true;
-                result[BYTES - 1] = 0;
-            }
-            3 => {
-                overflow = true;
-                result[BYTES - 1] = 1;
-            }
-            4.. => panic!("Most-significant bit cannot be 4 or more"),
-        }
+        let last_byte = &mut result[BYTES - 1];
+        overflow = *last_byte > 1u8;
+        *last_byte &= 0x01;
     } else {
         overflow = false;
     }
