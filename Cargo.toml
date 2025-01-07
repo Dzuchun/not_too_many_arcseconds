@@ -26,3 +26,6 @@ broken_intra_doc_links = "forbid"
 
 [lints.clippy]
 module_name_repetitions = "allow"
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
