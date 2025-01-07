@@ -313,30 +313,40 @@ pub const fn const_rem_assign(lhs: &mut u206265, rhs: &u206265) {
 }
 
 pub const fn const_ilog(val: &u206265, base: &u206265) -> Option<u32> {
-    const TWO: u206265 = create_bytes([0x02]);
-    if const_cmp(base, &TWO).is_lt() || const_cmp(val, &u206265::ZERO).is_eq() {
+    if const_cmp(base, &u206265::ONE).is_le() || const_cmp(val, &u206265::ZERO).is_eq() {
         return None;
     }
     if const_cmp(val, &u206265::ONE).is_eq() {
         return Some(0);
     }
-    let mut probe = u206265::ONE;
+    let mut val = val.const_clone(); // I'm sorry for that. It's much easier to work with way
     let mut res = 0u32;
-    loop {
-        let (new_probe, overflow) = const_mul(&probe, base);
-        if overflow {
-            break;
-        }
-        probe = new_probe;
-        match const_cmp(val, &probe) {
-            Ordering::Less => break,
-            Ordering::Equal => {
-                res += 1;
+    let mut powers_of_probe: [Option<(u206265, bool)>; 17] = [
+        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None,
+    ];
+    powers_of_probe[0] = Some((base.const_clone(), false));
+    while const_cmp(&val, base).is_ge() {
+        let (probe, mut next_probes) = powers_of_probe.split_first_mut().unwrap();
+        let mut probe = probe.as_ref().unwrap();
+        let mut probe_res = 1u32;
+        loop {
+            let (new_probe, new_next_probes) = next_probes.split_first_mut().unwrap();
+            next_probes = new_next_probes;
+            let new_probe = if let Some(present) = new_probe {
+                present
+            } else {
+                *new_probe = Some(const_mul(&probe.0, &probe.0));
+                new_probe.as_ref().unwrap()
+            };
+            if new_probe.1 || const_cmp(&val, &new_probe.0).is_lt() {
                 break;
             }
-            Ordering::Greater => {}
+            probe = new_probe;
+            probe_res <<= 1;
         }
-        res += 1;
+        const_div_assign(&mut val, &probe.0);
+        res += probe_res;
     }
     Some(res)
 }
