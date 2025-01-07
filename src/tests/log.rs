@@ -1,4 +1,4 @@
-use crate::u206265;
+use crate::{const_cmp, const_div_assign, const_ilog10, const_mul, u206265};
 
 quickcheck! {
     fn ilog(val: u128, base: u128) -> bool {
@@ -58,6 +58,15 @@ quickcheck! {
         // assert
         log == log2
     }
+}
+
+#[test]
+#[ignore = "for manual testing"]
+fn special_ilog10_for_max() {
+    assert_eq!(
+        dbg!(core::hint::black_box(const_ilog10(&u206265::MAX))),
+        Some(62_091)
+    );
 }
 
 quickcheck! {
