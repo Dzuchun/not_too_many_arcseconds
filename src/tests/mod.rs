@@ -8,6 +8,7 @@ mod format;
 mod log;
 mod misc;
 mod mul;
+mod not;
 mod shl;
 mod shr;
 mod sub;

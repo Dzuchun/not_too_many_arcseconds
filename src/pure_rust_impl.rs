@@ -393,3 +393,11 @@ macro_rules! bit_op {
 bit_op! {bitand, &=}
 bit_op! {bitor, |=}
 bit_op! {bitxor, ^=}
+
+pub const fn const_not_assign(val: &mut u206265) {
+    const_for!(i in 0..BYTES => {
+        val.0[i] = !val.0[i];
+    });
+    // last byte should only use one bit
+    val.0[BYTES - 1] &= 0x01;
+}

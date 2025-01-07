@@ -493,6 +493,25 @@ impl Ord for u206265 {
     }
 }
 
+impl Not for u206265 {
+    type Output = Self;
+
+    #[inline]
+    fn not(mut self) -> Self::Output {
+        const_not_assign(&mut self);
+        self
+    }
+}
+
+impl Not for &u206265 {
+    type Output = u206265;
+
+    #[inline]
+    fn not(self) -> Self::Output {
+        self.const_clone().not()
+    }
+}
+
 impl Sum for u206265 {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
