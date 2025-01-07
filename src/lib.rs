@@ -558,30 +558,32 @@ impl UpperHex for u206265 {
 
 impl Display for u206265 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        const TEN: u206265 = u206265::from_u8(10);
-        const MAX_LENGTH: usize = 61091; // log10(u206265::MAX)
+        const TEN_38: u206265 = u206265::from_u128(10u128.pow(38));
+        const MAX_LENGTH: usize = 1612; // approx log10(u206265::MAX) / log10(u128::MAX)
         if self == &Self::ZERO {
             return write!(f, "{}", 0);
         }
-        let mut buf: [u8; MAX_LENGTH] = [0; MAX_LENGTH];
+        let mut buf: [u128; MAX_LENGTH] = [0; MAX_LENGTH];
         let mut buf_i = 0;
-        let mut val = self.clone();
+        let mut val = self.const_clone();
 
         while val != u206265::ZERO {
-            let (div, rem) = const_div_rem(&val, &TEN).unwrap();
+            let (div, rem) = const_div_rem(&val, &TEN_38).unwrap();
             val = div;
-            buf[buf_i] = rem.try_into_u8().unwrap();
+            buf[buf_i] = rem.try_into_u128().unwrap();
             buf_i += 1;
         }
 
+        buf_i -= 1;
+        write!(f, "{}", buf[buf_i])?;
         for i in (0..buf_i).rev() {
-            debug_assert!(buf[i] <= 9);
-            write!(f, "{}", buf[i])?;
+            write!(f, "{:038}", buf[i])?;
         }
 
         Ok(())
     }
 }
+
 #[cfg_attr(test, macro_use)]
 #[cfg(test)]
 extern crate quickcheck;

@@ -47,3 +47,13 @@ macro_rules! special_display {
 }
 
 special_display!(256);
+special_display!(46_350_398_256_093_263_243_789_728_937_492_374_032);
+special_display!(100_000_000_000_000_000_000_000_000_000_000_000_000);
+special_display!(256_000_000_000_000_000_000_000_000_000_000_000_000);
+special_display!(300_000_000_000_000_000_000_000_000_000_000_000_000);
+
+#[test]
+fn special_display_for_max() {
+    let val: u128 = u128::MAX;
+    assert_eq!(format!("{}", val), format!("{}", u206265::from(val)));
+}
