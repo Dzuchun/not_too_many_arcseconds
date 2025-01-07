@@ -488,7 +488,7 @@ macro_rules! bit_op {
             }
 
             #[doc = concat!("Finds ", stringify!([<$op_name:lower>]), " of ``lhs`` and ``rhs``.")]
-            #[doc = concat!("Same as [`core::ops::", stringify!([<$op_name:lower>]), "::", stringify!($op_name), "`], but can be used in a constant context.")]
+            #[doc = concat!("Same as [`core::ops::", stringify!($op_name), "::", stringify!([<$op_name:lower>]), "`], but can be used in a constant context.")]
             #[inline]
             pub const fn [<const_ $op_name:lower>](lhs: &u206265, rhs: &u206265) -> u206265 {
                 let mut lhs = lhs.const_clone();

@@ -19,7 +19,9 @@ const BITS_U32: u32 = {
 const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206_265 / 8 + 1
 
 // little-endian
-/// An unsigned, 206265-bit integer. Functions about how you would expect:
+/// An unsigned, 206265-bit integer.
+///
+/// Functions about how you would expect:
 ///
 /// ```rust
 /// # use not_too_many_arcseconds::u206265;
@@ -42,9 +44,9 @@ impl u206265 {
     pub const ZERO: u206265 = Self::MIN;
     #[allow(missing_docs)]
     pub const ONE: u206265 = create_bytes([0x01]);
-    /// A maxium value
+    /// A maximum value
     ///
-    /// Equals $2^{206265}-1$
+    /// Equals $2^{206265} - 1$
     pub const MAX: u206265 = u206265({
         let mut all_max = [0xff; BYTES];
         all_max[BYTES - 1] = 0b1;
@@ -203,7 +205,7 @@ impl_unsigned!(u64);
 impl_unsigned!(u128);
 impl_unsigned!(usize);
 
-/// A unit-type error returned if attempted to convert negative integer [`u206265`].
+/// A unit-type error returned if attempted to convert negative integer into [`u206265`].
 #[derive(Debug)]
 pub struct NegativeIntError(());
 
