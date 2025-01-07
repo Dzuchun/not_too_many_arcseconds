@@ -1,4 +1,5 @@
 #![no_std]
+#![doc = include_str!("../README.md")]
 
 const BITS: usize = 206_265;
 const BITS_U32: u32 = {
@@ -18,21 +19,42 @@ const BITS_U32: u32 = {
 const BYTES: usize = BITS / 8 + (if (BITS & 0b111) > 0 { 1 } else { 0 }); // 206_265 / 8 + 1
 
 // little-endian
+/// An unsigned, 206265-bit integer. Functions about how you would expect:
+///
+/// ```rust
+/// # use not_too_many_arcseconds::u206265;
+/// let a = u206265::from(2u8);
+/// let b = u206265::from(3u128);
+///
+/// assert_eq!(a + b, 5u32.into());
+/// ```
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "copy", derive(Copy))]
 pub struct u206265([u8; BYTES]); // last byte should only use one bit
 
 impl u206265 {
+    /// A minimum value
+    ///
+    /// Equals zero
     pub const MIN: u206265 = create_bytes([]);
+    #[allow(missing_docs)]
     pub const ZERO: u206265 = Self::MIN;
+    #[allow(missing_docs)]
     pub const ONE: u206265 = create_bytes([0x01]);
+    /// A maxium value
+    ///
+    /// Equals $2^{206265}-1$
     pub const MAX: u206265 = u206265({
         let mut all_max = [0xff; BYTES];
         all_max[BYTES - 1] = 0b1;
         all_max
     });
 
+    /// Number of bytes actually containing something.
+    ///
+    /// You are unlikely to find any use in this method, but it is here, in case you need it.
+    #[inline]
     pub const fn significant_bytes(&self) -> usize {
         let mut i = BYTES - 1;
         loop {
@@ -46,6 +68,8 @@ impl u206265 {
         }
     }
 
+    /// Same as [`Self::significant_bytes`], but returns `u32` instead of `usize`.
+    #[inline]
     pub const fn significant_bytes_u32(&self) -> u32 {
         let res_usize = self.significant_bytes();
         debug_assert!(res_usize < BYTES);
@@ -58,10 +82,14 @@ impl u206265 {
         res
     }
 
+    /// A byte slice of internal memory, containing integer's data.
+    #[inline]
     pub fn significant_bytes_slice(&self) -> &[u8] {
         &self.0[..self.significant_bytes()]
     }
 
+    /// Same as [`Clone::clone`], but `const`.
+    #[inline]
     pub const fn const_clone(&self) -> Self {
         Self(self.0)
     }
@@ -72,19 +100,24 @@ mod pure_rust_impl;
 use core::{
     fmt::{Display, LowerHex, UpperHex},
     iter::{Product, Sum},
+    ops::Not,
 };
 
 pub use pure_rust_impl::{
     const_add, const_add_assign, const_bitand, const_bitand_assign, const_bitor,
     const_bitor_assign, const_bitxor, const_bitxor_assign, const_cmp, const_div, const_div_assign,
-    const_div_rem, const_ilog, const_ilog10, const_ilog2, const_mul, const_mul_assign, const_rem,
-    const_rem_assign, const_shl, const_shl_assign, const_shr, const_shr_assign, const_sub,
-    const_sub_assign, create_bytes,
+    const_div_rem, const_ilog, const_ilog10, const_ilog2, const_mul, const_mul_assign,
+    const_not_assign, const_rem, const_rem_assign, const_shl, const_shl_assign, const_shr,
+    const_shr_assign, const_sub, const_sub_assign, create_bytes,
 };
 
+/// Represents failure to convert [`u206265`] into a smaller integer.
+///
+/// The only field is the number of bytes operation would require. For example, if `bytes_required = 1`, conversion to `u8` will fail, but it will succeed for `u16`, `u32`, etc.
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct u206265ToUnsigned {
+    /// Minimum number of bytes required for successful conversion.
     pub bytes_required: usize,
 }
 
@@ -92,17 +125,21 @@ macro_rules! impl_unsigned {
     ($type:ty) => {
         ::paste::paste! {
             impl u206265 {
-                // Compatibility function, always succeeds
+                #[doc = concat!(r#""Attempts" to create [`u206265`] from [`"#, stringify!($type), "`].")]
+                #[doc = concat!(r#"Since [`u206265`] is larger than [`"#, stringify!($type), "`], this operation will always succeed. This method is only intended for compatibility")]
                 #[inline]
                 pub const fn [<try_from_ $type>](value: $type) -> Option<Self> {
                     Some(create_bytes(value.to_le_bytes()))
                 }
 
+                #[doc = concat!(r#"Creates [`u206265`] from [`"#, stringify!($type), "`].")]
                 #[inline]
                 pub const fn [<from_ $type>](value: $type) -> Self {
                     create_bytes(value.to_le_bytes())
                 }
 
+                #[doc = concat!(r#"Attempts to convert [`u206265`] into [`"#, stringify!($type), "`].")]
+                #[doc = concat!(r#"This operation can fail, since [`"#, stringify!($type), "`] might not have enough bytes to hold all of the data. [`u206265ToUnsigned`] is returned in this case, describing how many bytes is required to store the number")]
                 #[inline]
                 pub const fn [<try_into_ $type>](&self) -> Result<$type, u206265ToUnsigned> {
                     const BITS_U32: u32 = $type::BITS;
@@ -166,13 +203,23 @@ impl_unsigned!(u64);
 impl_unsigned!(u128);
 impl_unsigned!(usize);
 
+/// A unit-type error returned if attempted to convert negative integer [`u206265`].
 #[derive(Debug)]
 pub struct NegativeIntError(());
 
+/// An error type for conversion of [`u206265`] into a signed integer.
+///
+/// Variants could be understood better, if you consider that this operation essentially has no steps:
+/// - convert to unsigned integer
+/// - cost to signed integer
+///
+/// variants correspond to error during one of the steps.
 #[allow(non_camel_case_types, reason = "foolish little rust-analyser...")]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum u206265ToSigned {
+    /// Failed to convert from [`u206265`] into unsigned int
     Unsigned(u206265ToUnsigned),
+    /// Failed to convert from unsigned int into signed int
     Signed,
 }
 
@@ -180,6 +227,8 @@ macro_rules! impl_signed {
     ($itype:ty, $utype:ty) => {
         ::paste::paste! {
             impl u206265 {
+                #[doc = concat!(r#"Attempts to create [`u206265`] from [`"#, stringify!($itype), "`].")]
+                #[doc = "Since [`u206265`] is unsigned, this operation errors on negative input"]
                 #[inline]
                 pub const fn [<try_from_ $itype>](value: $itype) -> Option<Self> {
                     if value >= 0 {
@@ -191,6 +240,11 @@ macro_rules! impl_signed {
                     }
                 }
 
+                #[doc = concat!(r#"Attempts to convert [`u206265`] into [`"#, stringify!($itype), "`].")]
+                #[doc = "This operation can fail in two ways:"]
+                #[doc = concat!(r#"- [`"#, stringify!($utype), "`] might not have enough bytes to hold all of the data")]
+                #[doc = concat!(r#"- resulting [`"#, stringify!($utype), "`] might be too large for [`", stringify!($itype), "`]")]
+                #[doc = "In both cases, [`u206265ToSigned`] is returned"]
                 #[inline]
                 pub const fn [<try_into_ $itype>](&self) -> Result<$itype, u206265ToSigned> {
                     let unsigned: $utype = match u206265::[<try_into_ $utype>](self) {
@@ -258,13 +312,8 @@ impl_signed!(isize, usize);
 macro_rules! max_const {
     ($type:ty) => {
         ::paste::paste! {
-            pub const [<MAX_ $type:upper>]: Self = Self::[<from_ $type>]($type::MAX);
-        }
-    };
-
-    ($type:ty, $utype:ty) => {
-        ::paste::paste! {
-            pub const [<MAX_ $type:upper>]: Self = Self::[<from_ $utype>]($type::MAX as $utype);
+            #[doc = concat!("A [`u206265`] value, corresponding to the MAX constant of [`", stringify!($type), "`]")]
+            pub const [<MAX_ $type:upper>]: Self = Self::[<try_from_ $type>]($type::MAX).unwrap();
         }
     };
 }
@@ -277,12 +326,12 @@ impl u206265 {
     max_const!(u128);
     max_const!(usize);
 
-    max_const!(i8, u8);
-    max_const!(i16, u16);
-    max_const!(i32, u32);
-    max_const!(i64, u64);
-    max_const!(i128, u128);
-    max_const!(isize, usize);
+    max_const!(i8);
+    max_const!(i16);
+    max_const!(i32);
+    max_const!(i64);
+    max_const!(i128);
+    max_const!(isize);
 }
 
 macro_rules! impl_op_common {

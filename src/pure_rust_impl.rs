@@ -4,6 +4,37 @@ use const_for::const_for;
 
 use crate::{u206265, BITS_U32, BYTES};
 
+/// Creates [`u206265`] from provided little-endian bytes. Can be used in constant context.
+///
+/// To clarify things for dummies like me: this means that least significant byte comes **first**.
+///
+/// ### Panics
+///
+/// 1. If input array is too big. In this case, bigger than ``25_784`` bytes.
+///
+/// ```rust,should_panic
+/// not_too_many_arcseconds::create_bytes([0; 25_785]);
+/// ```
+///
+/// 2. If array is exactly ``25_784`` bytes, and the last byte is greater than 1
+///
+/// ```rust,should_panic
+/// let mut array = [0; 25_784];
+/// array[25_784 - 1] = 0x10; // setting last byte to ``2``
+/// not_too_many_arcseconds::create_bytes(array);
+/// ```
+///
+/// ### Example
+///
+/// Manually create from [`u32`]:
+///
+/// ```rust
+/// let some_u32: u32 = 0xAB_CD_DE_F1;
+/// let some_u206265 = not_too_many_arcseconds::create_bytes(some_u32.to_le_bytes());
+/// # assert_eq!(format!("{some_u32}"), format!("{some_u206265}"));
+/// ```
+///
+/// Though in this case, you probably better off using [`u206265::from_u32`].
 pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
     assert!(N <= BYTES, "Input array is too big!");
     if N == BYTES {
@@ -17,6 +48,7 @@ pub const fn create_bytes<const N: usize>(bytes: [u8; N]) -> u206265 {
     u206265(result)
 }
 
+/// Compares two [`u206265`]s. Same as [`Ord::cmp`], but can be used in constant context.
 pub const fn const_cmp(lhs: &u206265, rhs: &u206265) -> Ordering {
     let lhs_bytes = lhs.significant_bytes();
     let rhs_bytes = rhs.significant_bytes();
@@ -41,8 +73,14 @@ pub const fn const_cmp(lhs: &u206265, rhs: &u206265) -> Ordering {
     Ordering::Equal
 }
 
+/// Shifts [`u206265`]s by ``rhs`` bits to the left. Can be used in constant context.
+///
+/// Operation is performed in-place, so prefer using this function (or ``<<=`` operator), if you wish to avoid copying [`u206265`]s around.
+///
 /// ### Returns
-/// If overflow had occurred
+/// If overflow had occurred.
+///
+/// This implementation attempts to be consistent with the standard library one, so please look closely if ``std``'s overflow in this case means what you expect. I sure was surprised.
 pub const fn const_shl_assign(lhs: &mut u206265, mut rhs: u32) -> bool {
     // first, do the same thing std does, for consistency
     let overflow;
@@ -71,14 +109,24 @@ pub const fn const_shl_assign(lhs: &mut u206265, mut rhs: u32) -> bool {
     overflow
 }
 
+/// Shifts [`u206265`]s by ``rhs`` bits to the left. Can be used in constant context.
+///
+/// This implementation attempts to be consistent with the standard library one, so please look closely if ``std``'s overflow in this case means what you expect. I sure was surprised.
+#[inline]
 pub const fn const_shl(lhs: &u206265, rhs: u32) -> (u206265, bool) {
     let mut result = lhs.const_clone();
     let overflow = const_shl_assign(&mut result, rhs);
     (result, overflow)
 }
 
+/// Shifts [`u206265`]s by ``rhs`` bits to the right. Can be used in constant context.
+///
+/// Operation is performed in-place, so prefer using this function (or ``>>=`` operator), if you wish to avoid copying [`u206265`]s around.
+///
 /// ### Returns
-/// If overflow had occurred
+/// If overflow had occurred.
+///
+/// This implementation attempts to be consistent with the standard library one, so please look closely if ``std``'s overflow in this case means what you expect. I sure was surprised.
 pub const fn const_shr_assign(result: &mut u206265, mut rhs: u32) -> bool {
     // first, do the same thing std does, for consistency
     let overflow;
@@ -108,14 +156,22 @@ pub const fn const_shr_assign(result: &mut u206265, mut rhs: u32) -> bool {
     overflow
 }
 
+/// Shifts [`u206265`]s by ``rhs`` bits to the right. Can be used in constant context.
+///
+/// This implementation attempts to be consistent with the standard library one, so please look closely if ``std``'s overflow in this case means what you expect. I sure was surprised.
+#[inline]
 pub const fn const_shr(lhs: &u206265, rhs: u32) -> (u206265, bool) {
     let mut result = lhs.const_clone();
     let overflow = const_shr_assign(&mut result, rhs);
     (result, overflow)
 }
 
+/// Adds ``rhs`` to ``lhs``. Same as [`core::ops::AddAssign::add_assign`], but can be used in constant context.
+///
+/// Operation is performed in-place, so prefer using this function (or ``+=`` operator), if you wish to avoid copying [`u206265`]s around.
+///
 /// ### Returns
-/// If overflow had occurred
+/// If arithmetic overflow had occurred.
 pub const fn const_add_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     let significant_length = {
         let mut sl;
@@ -168,14 +224,20 @@ pub const fn const_add_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     }
 }
 
+/// Adds ``rhs`` to ``lhs``. Same as [`core::ops::Add::add`], but can be used in constant context.
+#[inline]
 pub const fn const_add(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     let mut result = lhs.const_clone();
     let overflow = const_add_assign(&mut result, rhs);
     (result, overflow)
 }
 
+/// Subtracts ``rhs`` from ``lhs``. Same as [`core::ops::SubAssign::sub_assign`], but can be used in constant context.
+///
+/// Operation is performed in-place, so prefer using this function (or ``-=`` operator), if you wish to avoid copying [`u206265`]s around.
+///
 /// ### Returns
-/// If underflow had occurred
+/// If arithmetic underflow had occurred.
 pub const fn const_sub_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     let mut borrow = 0u8;
     const_for!(i in 0..BYTES => {
@@ -203,18 +265,26 @@ pub const fn const_sub_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     }
 }
 
+/// Subtracts ``rhs`` from ``lhs``. Same as [`core::ops::Sub::sub`], but can be used in constant context.
+#[inline]
 pub const fn const_sub(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     let mut result = lhs.const_clone();
     let underflow = const_sub_assign(&mut result, rhs);
     (result, underflow)
 }
 
+/// Multiplies ``rhs`` by ``lhs``. Same as [`core::ops::MulAssign::mul_assign`], but can be used in constant context.
+///
+/// ### Returns
+/// If arithmetic overflow had occurred.
+#[inline]
 pub const fn const_mul_assign(lhs: &mut u206265, rhs: &u206265) -> bool {
     let (result, overflow) = const_mul(lhs, rhs);
     *lhs = result;
     overflow
 }
 
+/// Multiplies ``rhs`` by ``lhs``. Same as [`core::ops::Mul::mul`], but can be used in constant context.
 pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     let lhs_bytes = lhs.significant_bytes();
     let rhs_bytes = rhs.significant_bytes();
@@ -255,6 +325,10 @@ pub const fn const_mul(lhs: &u206265, rhs: &u206265) -> (u206265, bool) {
     (u206265(result), overflow)
 }
 
+/// Divides ``lhs`` by ``rhs``.
+///
+/// ### Returns
+/// ``Option<(quotient, remainder)>``. [`Option::None`] corresponds to ``rhs == 0``.
 pub const fn const_div_rem(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u206265)> {
     if const_cmp(rhs, &u206265::ZERO).is_eq() {
         return None;
@@ -279,6 +353,7 @@ pub const fn const_div_rem(lhs: &u206265, rhs: &u206265) -> Option<(u206265, u20
     Some((result, remainder))
 }
 
+/// Divides ``lhs`` by ``rhs``. Same as ``{int}::checked_div``.
 #[inline]
 pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<u206265> {
     if let Some((result, _)) = const_div_rem(lhs, rhs) {
@@ -288,6 +363,9 @@ pub const fn const_div(lhs: &u206265, rhs: &u206265) -> Option<u206265> {
     }
 }
 
+/// Finds smallest* ``lhs`` modulo ``rhs``. Same as ``{int}::checked_rem``.
+///
+/// * - mathematically, finding "an int modulo other int" is not a single-valued operation. What we usually want is the smallest modulo value.
 #[inline]
 pub const fn const_rem(lhs: &u206265, rhs: &u206265) -> Option<u206265> {
     if let Some((_, result)) = const_div_rem(lhs, rhs) {
@@ -297,16 +375,38 @@ pub const fn const_rem(lhs: &u206265, rhs: &u206265) -> Option<u206265> {
     }
 }
 
+/// Divides ``lhs`` by ``rhs``, assigning the result. Same as [`core::ops::DivAssign::div_assign`].
+///
+/// ### Panics
+/// If ``rhs == 0``.
 #[inline]
 pub const fn const_div_assign(lhs: &mut u206265, rhs: &u206265) {
     *lhs = const_div(lhs, rhs).expect("Division by zero");
 }
 
+/// Finds smallest* ``lhs`` modulo ``rhs``, assigning the result. Same as [`core::ops::RemAssign::rem_assign`].
+///
+/// * - mathematically, finding "an int modulo other int" is not a single-valued operation. What we usually want, is the smallest modulo value.
+///
+/// ### Panics
+/// If ``rhs == 0``.
 #[inline]
 pub const fn const_rem_assign(lhs: &mut u206265, rhs: &u206265) {
     *lhs = const_rem(lhs, rhs).expect("Division by zero");
 }
 
+/// Finds $\log_{\text{base}}(\test{val})$, if one exists. Same as ``{int}::checked_ilog``.
+///
+/// This implementation attempts to be consistent with ``core`` functions, so please check "logarithms exists" means exactly what you think it means. For instance, in ``core`` terms, ``logi(1, 1)`` does not exist:
+///
+/// ```rust
+/// # use not_too_many_arcseconds::{const_ilog, u206265};
+/// assert_eq!(const_ilog(&u206265::ONE, &u206265::ONE), None);
+/// ```
+#[allow(
+    clippy::missing_panics_doc,
+    reason = "17 steps is enough to overflow; I need manual array splitting, since there's a complex mutability pattern going on"
+)]
 pub const fn const_ilog(val: &u206265, base: &u206265) -> Option<u32> {
     if const_cmp(base, &u206265::ONE).is_le() || const_cmp(val, &u206265::ZERO).is_eq() {
         return None;
@@ -346,11 +446,15 @@ pub const fn const_ilog(val: &u206265, base: &u206265) -> Option<u32> {
     Some(res)
 }
 
+/// Same as [`const_ilog`], but base 10.
 pub const fn const_ilog10(val: &u206265) -> Option<u32> {
     const TEN: u206265 = create_bytes([10u8]);
     const_ilog(val, &TEN)
 }
 
+/// Same as [`const_ilog`], but base 2.
+///
+/// MUCH faster than ``const_ilog(_, 2)``, so prefer this one, if you know your base to be 2.
 pub const fn const_ilog2(val: &u206265) -> Option<u32> {
     // basically, I need to find position of the highest bit
     let high_byte_pos = val.significant_bytes();
@@ -367,7 +471,10 @@ pub const fn const_ilog2(val: &u206265) -> Option<u32> {
 macro_rules! bit_op {
     ($op_name:ident, $op_assign:tt) => {
         ::paste::paste! {
-            pub const fn [<const_ $op_name _assign>](lhs: &mut u206265, rhs: &u206265) {
+            #[doc = concat!("Finds ", stringify!([<$op_name:lower>]), " of ``lhs`` and ``rhs``, assigning the result to ``lhs``.")]
+            #[doc = concat!("Same as [`core::ops::", stringify!([<$op_name Assign>]), "::", stringify!([<$op_name:lower _assign>]), "`], but can be used in a constant context.")]
+            #[doc = concat!("Operation is performed in-place, so prefer using this function (or ``", stringify!($op_assign), "`` operator), if you wish to avoid copying [`u206265`]s around.")]
+            pub const fn [<const_ $op_name:lower _assign>](lhs: &mut u206265, rhs: &u206265) {
                 let lhs_bytes = lhs.significant_bytes();
                 let rhs_bytes = rhs.significant_bytes();
                 let bytes = if lhs_bytes >= rhs_bytes {
@@ -380,20 +487,27 @@ macro_rules! bit_op {
                 });
             }
 
+            #[doc = concat!("Finds ", stringify!([<$op_name:lower>]), " of ``lhs`` and ``rhs``.")]
+            #[doc = concat!("Same as [`core::ops::", stringify!([<$op_name:lower>]), "::", stringify!($op_name), "`], but can be used in a constant context.")]
             #[inline]
-            pub const fn [<const_ $op_name>](lhs: &u206265, rhs: &u206265) -> u206265 {
+            pub const fn [<const_ $op_name:lower>](lhs: &u206265, rhs: &u206265) -> u206265 {
                 let mut lhs = lhs.const_clone();
-                [<const_ $op_name _assign>](&mut lhs, rhs);
+                [<const_ $op_name:lower _assign>](&mut lhs, rhs);
                 lhs
             }
         }
     };
 }
 
-bit_op! {bitand, &=}
-bit_op! {bitor, |=}
-bit_op! {bitxor, ^=}
+bit_op! {BitAnd, &=}
+bit_op! {BitOr, |=}
+bit_op! {BitXor, ^=}
 
+/// Performs bitwise inversion of the integer. Same as [`core::ops::Not::not`], but can be used in a constant context.
+///
+/// Operation is performed in-place, so prefer using this function, if you wish to avoid copying [`u206265`]s around.
+///
+/// NOTE: ``!x`` COPIES the value, see [`core::ops::Not::not`] signature.
 pub const fn const_not_assign(val: &mut u206265) {
     const_for!(i in 0..BYTES => {
         val.0[i] = !val.0[i];
