@@ -69,6 +69,8 @@ impl u206265 {
 
 mod pure_rust_impl;
 
+use core::iter::{Product, Sum};
+
 pub use pure_rust_impl::{
     const_add, const_add_assign, const_bitand, const_bitand_assign, const_bitor,
     const_bitor_assign, const_bitxor, const_bitxor_assign, const_cmp, const_div, const_div_assign,
@@ -485,6 +487,28 @@ impl Ord for u206265 {
     #[inline]
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         const_cmp(self, other)
+    }
+}
+
+impl Sum for u206265 {
+    #[inline]
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum = u206265::ZERO;
+        for num in iter {
+            sum += num;
+        }
+        sum
+    }
+}
+
+impl Product for u206265 {
+    #[inline]
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut prod = u206265::ONE;
+        for num in iter {
+            prod *= num;
+        }
+        prod
     }
 }
 
