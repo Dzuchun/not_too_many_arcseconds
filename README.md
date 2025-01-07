@@ -1,3 +1,6 @@
+![CI status](https://github.com/Dzuchun/not_too_many_arcseconds/actions/workflows/build.yml/badge.svg)
+[![Documentation status](https://github.com/Dzuchun/not_too_many_arcseconds/actions/workflows/docs.yml/badge.svg)][docs]
+
 This is silly joke, born from
 
 ```text
@@ -48,3 +51,5 @@ It's an approximate number of arc seconds in a radian (both are angle-measuring 
 Exact value would be $180 / \pi \cdot 3600$.
 
 **TL;DR**: No idea, just a funny number.
+
+[docs]: https://dzuchun.github.io/not_too_many_arcseconds/not_too_many_arcseconds/index.html
