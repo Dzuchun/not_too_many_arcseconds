@@ -2,7 +2,7 @@ use core::cmp::Ordering;
 
 use const_for::const_for;
 
-use crate::{u206265, BITS_U32, BYTES};
+use crate::{BITS_U32, BYTES, u206265};
 
 /// Creates [`u206265`] from provided little-endian bytes. Can be used in constant context.
 ///

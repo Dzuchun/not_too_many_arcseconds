@@ -1,6 +1,6 @@
 use core::ops::Shl;
 
-use deranged::{RangedU128, RangedU32};
+use deranged::{RangedU32, RangedU128};
 
 use crate::{u206265, u206265ToUnsigned};
 

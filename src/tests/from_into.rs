@@ -76,7 +76,7 @@ const U128_MAX: u128 = u128::MAX;
 special_from_into!(U128_MAX, u128);
 
 macro_rules! test_from_repr {
-    ($from:expr, [$($expected:literal), +]) => {
+    ($from:expr_2021, [$($expected:literal), +]) => {
         ::paste::paste!{
             #[test]
             #[allow(non_snake_case, reason = "These names are generated, and thus allowed to be weird")]

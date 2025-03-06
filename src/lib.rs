@@ -108,7 +108,7 @@ use core::{
 pub use pure_rust_impl::{
     const_add, const_add_assign, const_bitand, const_bitand_assign, const_bitor,
     const_bitor_assign, const_bitxor, const_bitxor_assign, const_cmp, const_div, const_div_assign,
-    const_div_rem, const_ilog, const_ilog10, const_ilog2, const_mul, const_mul_assign,
+    const_div_rem, const_ilog, const_ilog2, const_ilog10, const_mul, const_mul_assign,
     const_not_assign, const_rem, const_rem_assign, const_shl, const_shl_assign, const_shr,
     const_shr_assign, const_sub, const_sub_assign, create_bytes,
 };

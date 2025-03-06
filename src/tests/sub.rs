@@ -1,4 +1,4 @@
-use crate::{u206265, u206265ToUnsigned, BYTES};
+use crate::{BYTES, u206265, u206265ToUnsigned};
 
 quickcheck! {
     fn sub(lhs: u128, rhs: u128) -> bool {
